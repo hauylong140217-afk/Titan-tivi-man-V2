@@ -1,213 +1,205 @@
---// 📺 TITAN TIVI MAN HUB | QUANTUM ULTIMATE
---// BLOX FRUITS | RAYFIELD ONLY | NO KEY
+--====================================================
+-- Titan Tivi Man Hub | Blox Fruits
+-- Rayfield UI | Auto Farm REAL (Quest/Bay/Mob)
+--====================================================
 
-repeat task.wait() until game:IsLoaded()
-
--- Anti AFK
-pcall(function()
-    local vu = game:GetService("VirtualUser")
-    game:GetService("Players").LocalPlayer.Idled:Connect(function()
-        vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-        task.wait(1)
-        vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-    end)
-end)
-
--- Rayfield
+-- Load Rayfield
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+
+-- Window
 local Window = Rayfield:CreateWindow({
-    Name = "📺 TITAN TIVI MAN HUB | QUANTUM ULTIMATE",
-    LoadingTitle = "TITAN TIVI MAN HUB",
-    LoadingSubtitle = "RAYFIELD ONLY • QUANTUM",
+    Name = "📺 Titan Tivi Man Hub | Blox Fruits",
+    LoadingTitle = "Titan Tivi Man Hub",
+    LoadingSubtitle = "Auto Farm Rayfield",
     ConfigurationSaving = {
         Enabled = true,
-        FolderName = "TitanTiviManHub",
-        FileName = "QuantumUltimate"
-    },
-    KeySystem = false
+        FolderName = "TitanTiviMan",
+        FileName = "BloxFruits"
+    }
 })
 
 -- Services
 local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
 local RS = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
-local VirtualUser = game:GetService("VirtualUser")
 local LP = Players.LocalPlayer
+local Char = LP.Character or LP.CharacterAdded:Wait()
+local HRP = Char:WaitForChild("HumanoidRootPart")
+local Hum = Char:WaitForChild("Humanoid")
 
--- ======================
--- STATE (ALL VIA UI)
--- ======================
+LP.CharacterAdded:Connect(function(c)
+    Char = c
+    HRP = c:WaitForChild("HumanoidRootPart")
+    Hum = c:WaitForChild("Humanoid")
+end)
+
+-- State
 local State = {
-    Quantum=false,
-    Bring=true,
-    Lock=true,
-    Fast=true,
-    AutoEquip=true,
-    AutoBuso=true,
-    AutoKen=true,
-    Noclip=false,
-    OffsetY=12,
-    Pull=4,
-    Speed=0.15,
-    TargetRange=200
+    Enable = false,
+    Mode = "Quest",
+    FlySpeed = 300,
+    FastAttack = true
 }
 
-local FarmCF=nil
+-- Tween
+local function TweenTo(cf)
+    local dist = (HRP.Position - cf.Position).Magnitude
+    local t = dist / State.FlySpeed
+    local tw = TweenService:Create(
+        HRP,
+        TweenInfo.new(t, Enum.EasingStyle.Linear),
+        {CFrame = cf}
+    )
+    tw:Play()
+    tw.Completed:Wait()
+end
 
--- ======================
--- FUNCTIONS
--- ======================
+-- Equip weapon
 local function EquipWeapon()
-    for _,v in pairs(LP.Backpack:GetChildren()) do
+    local bp = LP.Backpack:GetChildren()
+    for _,v in pairs(bp) do
         if v:IsA("Tool") then
-            LP.Character.Humanoid:EquipTool(v)
+            Hum:EquipTool(v)
             return
         end
     end
 end
 
+-- Click
 local function Click()
-    VirtualUser:Button1Down(Vector2.new(0,0))
-    VirtualUser:Button1Up(Vector2.new(0,0))
+    pcall(function()
+        mouse1click()
+    end)
 end
 
-local function GetClosestMob()
-    local best,dist=nil,math.huge
-    if not FarmCF then return nil end
+-- Simple Quest Table (DEMO – ổn định, không đứng im)
+local QuestTable = {
+    {
+        Min = 1, Max = 700,
+        Quest = "BanditQuest1",
+        ID = 1,
+        Mob = "Bandit",
+        NPC = CFrame.new(1061,16,1547)
+    },
+    {
+        Min = 700, Max = 1500,
+        Quest = "Area1Quest",
+        ID = 1,
+        Mob = "Raider",
+        NPC = CFrame.new(-424,73,1837)
+    },
+    {
+        Min = 1500, Max = 2550,
+        Quest = "HauntedQuest1",
+        ID = 1,
+        Mob = "Reborn Skeleton",
+        NPC = CFrame.new(-9515,172,6071)
+    }
+}
+
+-- Get Quest
+local function GetQuestByLevel()
+    local lv = LP.Data.Level.Value
+    for _,q in pairs(QuestTable) do
+        if lv >= q.Min and lv < q.Max then
+            return q
+        end
+    end
+end
+
+-- Find Mob
+local function FindMob(name)
     for _,m in pairs(workspace.Enemies:GetChildren()) do
-        if m:FindFirstChild("Humanoid") and m:FindFirstChild("HumanoidRootPart")
-        and m.Humanoid.Health>0 then
-            local d=(m.HumanoidRootPart.Position-FarmCF.Position).Magnitude
-            if d<dist and d<=State.TargetRange then
-                dist=d; best=m
-            end
+        if m.Name == name and m:FindFirstChild("Humanoid")
+        and m.Humanoid.Health > 0 then
+            return m
         end
     end
-    return best
 end
 
--- ======================
--- UI
--- ======================
-local QuantumTab = Window:CreateTab("⚛️ Quantum")
-local PlayerTab  = Window:CreateTab("👤 Player")
+-- Farm Mob
+local function FarmMob(name)
+    local mob = FindMob(name)
+    if not mob then return end
+    TweenTo(mob.HumanoidRootPart.CFrame * CFrame.new(0,0,4))
+    EquipWeapon()
+    repeat
+        if State.FastAttack then Click() end
+        task.wait()
+    until mob.Humanoid.Health <= 0 or not State.Enable
+end
 
-QuantumTab:CreateToggle({
-    Name="Enable Quantum Auto Farm",
-    CurrentValue=false,
-    Callback=function(v)
-        State.Quantum=v
-        if v and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
-            FarmCF=LP.Character.HumanoidRootPart.CFrame
-        end
-    end
-})
-
-QuantumTab:CreateToggle({Name="Bring Mob",CurrentValue=true,Callback=function(v)State.Bring=v end})
-QuantumTab:CreateToggle({Name="Lock / Freeze Mob",CurrentValue=true,Callback=function(v)State.Lock=v end})
-QuantumTab:CreateToggle({Name="Fast Attack",CurrentValue=true,Callback=function(v)State.Fast=v end})
-QuantumTab:CreateToggle({Name="Auto Equip Weapon",CurrentValue=true,Callback=function(v)State.AutoEquip=v end})
-QuantumTab:CreateToggle({Name="Auto Buso",CurrentValue=true,Callback=function(v)State.AutoBuso=v end})
-QuantumTab:CreateToggle({Name="Auto Observation (Ken)",CurrentValue=true,Callback=function(v)State.AutoKen=v end})
-
-QuantumTab:CreateSlider({
-    Name="Height Offset (Safe)",
-    Range={5,25},Increment=1,CurrentValue=12,
-    Callback=function(v)State.OffsetY=v end
-})
-QuantumTab:CreateSlider({
-    Name="Pull Distance",
-    Range={2,8},Increment=1,CurrentValue=4,
-    Callback=function(v)State.Pull=v end
-})
-QuantumTab:CreateSlider({
-    Name="Quantum Speed",
-    Range={0.05,0.30},Increment=0.01,CurrentValue=0.15,
-    Callback=function(v)State.Speed=v end
-})
-QuantumTab:CreateSlider({
-    Name="Target Range",
-    Range={50,400},Increment=10,CurrentValue=200,
-    Callback=function(v)State.TargetRange=v end
-})
-
-QuantumTab:CreateDropdown({
-    Name="Preset",
-    Options={"Safe","Fast","Ultra"},
-    CurrentOption="Safe",
-    Callback=function(v)
-        if v=="Safe" then
-            State.OffsetY=14; State.Pull=4; State.Speed=0.20
-        elseif v=="Fast" then
-            State.OffsetY=10; State.Pull=3; State.Speed=0.12
-        elseif v=="Ultra" then
-            State.OffsetY=7; State.Pull=2; State.Speed=0.08
-        end
-    end
-})
-
-PlayerTab:CreateToggle({
-    Name="Noclip",
-    CurrentValue=false,
-    Callback=function(v)State.Noclip=v end
-})
-
--- ======================
--- CORE LOOPS (QUANTUM)
--- ======================
+-- Main Loop
 task.spawn(function()
     while task.wait() do
-        if State.Quantum and FarmCF and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
-            pcall(function()
-                -- giữ player đứng yên trên cao
-                LP.Character.HumanoidRootPart.CFrame = FarmCF * CFrame.new(0,State.OffsetY,0)
+        if not State.Enable then continue end
 
-                local mob=GetClosestMob()
-                if mob then
-                    if State.Bring then
-                        mob.HumanoidRootPart.CFrame = FarmCF * CFrame.new(0,0,-State.Pull)
-                        mob.HumanoidRootPart.CanCollide=false
-                    end
-                    if State.Lock then
-                        mob.Humanoid.WalkSpeed=0
-                        mob.Humanoid.JumpPower=0
-                        mob.Humanoid:ChangeState(11)
-                    end
-                    if State.AutoEquip then EquipWeapon() end
-                end
-            end)
-        end
-        task.wait(State.Speed)
+        local q = GetQuestByLevel()
+        if not q then task.wait(2) continue end
+
+        -- Take Quest
+        TweenTo(q.NPC)
+        task.wait(0.4)
+        pcall(function()
+            RS.Remotes.CommF_:InvokeServer("StartQuest", q.Quest, q.ID)
+        end)
+
+        -- Farm
+        repeat
+            FarmMob(q.Mob)
+            task.wait(0.2)
+        until not State.Enable
     end
 end)
 
-task.spawn(function()
-    while task.wait() do
-        if State.Quantum and State.Fast then Click() end
-    end
-end)
+--================= RAYFIELD UI =================
 
-task.spawn(function()
-    while task.wait(2) do
-        if State.Quantum and State.AutoBuso then
-            pcall(function() RS.Remotes.CommF_:InvokeServer("Buso") end)
-        end
-        if State.Quantum and State.AutoKen then
-            pcall(function() RS.Remotes.CommF_:InvokeServer("Ken",true) end)
-        end
-    end
-end)
+local FarmTab = Window:CreateTab("⚛️ Auto Farm")
+local MiscTab = Window:CreateTab("🛠 Misc")
 
-RunService.Stepped:Connect(function()
-    if State.Noclip and LP.Character then
-        for _,v in pairs(LP.Character:GetDescendants()) do
-            if v:IsA("BasePart") then v.CanCollide=false end
-        end
+FarmTab:CreateToggle({
+    Name = "Enable Auto Farm",
+    CurrentValue = false,
+    Callback = function(v)
+        State.Enable = v
     end
-end)
+})
 
-Rayfield:Notify({
-    Title="⚛️ Quantum Ultimate",
-    Content="ALL FEATURES ARE IN RAYFIELD",
-    Duration=6
+FarmTab:CreateDropdown({
+    Name = "Farm Mode",
+    Options = {"Quest","Mix"},
+    CurrentOption = "Quest",
+    Callback = function(v)
+        State.Mode = v
+    end
+})
+
+FarmTab:CreateSlider({
+    Name = "Fly Speed",
+    Range = {100,500},
+    Increment = 10,
+    CurrentValue = 300,
+    Callback = function(v)
+        State.FlySpeed = v
+    end
+})
+
+FarmTab:CreateToggle({
+    Name = "Fast Attack",
+    CurrentValue = true,
+    Callback = function(v)
+        State.FastAttack = v
+    end
+})
+
+MiscTab:CreateButton({
+    Name = "Reset Character",
+    Callback = function()
+        Hum.Health = 0
+    end
+})
+
+MiscTab:CreateParagraph({
+    Title = "Titan Tivi Man Hub",
+    Content = "Rayfield Only | Auto Farm Bay Quest\n💀 Dán là chạy"
 })
