@@ -1,160 +1,213 @@
---// 📺 TITAN TIVI MAN HUB | RAYFIELD ONLY
---// BLOX FRUITS | NO KEY
+--// 📺 TITAN TIVI MAN HUB | QUANTUM ULTIMATE
+--// BLOX FRUITS | RAYFIELD ONLY | NO KEY
 
 repeat task.wait() until game:IsLoaded()
 
---// Anti AFK
+-- Anti AFK
 pcall(function()
     local vu = game:GetService("VirtualUser")
     game:GetService("Players").LocalPlayer.Idled:Connect(function()
-        vu:Button2Down(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
+        vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
         task.wait(1)
-        vu:Button2Up(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
+        vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
     end)
 end)
 
---// Rayfield
+-- Rayfield
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
-
 local Window = Rayfield:CreateWindow({
-    Name = "📺 TITAN TIVI MAN HUB | BLOX FRUITS",
+    Name = "📺 TITAN TIVI MAN HUB | QUANTUM ULTIMATE",
     LoadingTitle = "TITAN TIVI MAN HUB",
-    LoadingSubtitle = "RAYFIELD ONLY",
+    LoadingSubtitle = "RAYFIELD ONLY • QUANTUM",
     ConfigurationSaving = {
         Enabled = true,
         FolderName = "TitanTiviManHub",
-        FileName = "RayfieldOnly"
+        FileName = "QuantumUltimate"
     },
     KeySystem = false
 })
 
---// Services
+-- Services
 local Players = game:GetService("Players")
 local RS = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local VirtualUser = game:GetService("VirtualUser")
 local LP = Players.LocalPlayer
 
---// States (ALL UI)
+-- ======================
+-- STATE (ALL VIA UI)
+-- ======================
 local State = {
-    AutoFarm = false,
-    AutoAttack = false,
-    FastAttack = false,
-    AutoEquip = false,
-    AutoBuso = false,
-    AutoKen = false,
-    BringMob = false,
-    LockMob = false,
-    Noclip = false
+    Quantum=false,
+    Bring=true,
+    Lock=true,
+    Fast=true,
+    AutoEquip=true,
+    AutoBuso=true,
+    AutoKen=true,
+    Noclip=false,
+    OffsetY=12,
+    Pull=4,
+    Speed=0.15,
+    TargetRange=200
 }
 
---// Functions
+local FarmCF=nil
+
+-- ======================
+-- FUNCTIONS
+-- ======================
 local function EquipWeapon()
     for _,v in pairs(LP.Backpack:GetChildren()) do
         if v:IsA("Tool") then
             LP.Character.Humanoid:EquipTool(v)
-            break
+            return
         end
     end
 end
 
 local function Click()
     VirtualUser:Button1Down(Vector2.new(0,0))
-    task.wait()
     VirtualUser:Button1Up(Vector2.new(0,0))
 end
 
---// Core Loops
-task.spawn(function()
-    while task.wait(0.25) do
-        if State.AutoFarm then
-            for _,mob in pairs(workspace.Enemies:GetChildren()) do
-                if mob:FindFirstChild("Humanoid")
-                and mob.Humanoid.Health > 0 then
-                    pcall(function()
-                        LP.Character.HumanoidRootPart.CFrame =
-                            mob.HumanoidRootPart.CFrame * CFrame.new(0,10,0)
-                        if State.AutoEquip then EquipWeapon() end
-                        if State.AutoAttack then Click() end
-                    end)
-                end
+local function GetClosestMob()
+    local best,dist=nil,math.huge
+    if not FarmCF then return nil end
+    for _,m in pairs(workspace.Enemies:GetChildren()) do
+        if m:FindFirstChild("Humanoid") and m:FindFirstChild("HumanoidRootPart")
+        and m.Humanoid.Health>0 then
+            local d=(m.HumanoidRootPart.Position-FarmCF.Position).Magnitude
+            if d<dist and d<=State.TargetRange then
+                dist=d; best=m
             end
         end
+    end
+    return best
+end
+
+-- ======================
+-- UI
+-- ======================
+local QuantumTab = Window:CreateTab("⚛️ Quantum")
+local PlayerTab  = Window:CreateTab("👤 Player")
+
+QuantumTab:CreateToggle({
+    Name="Enable Quantum Auto Farm",
+    CurrentValue=false,
+    Callback=function(v)
+        State.Quantum=v
+        if v and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
+            FarmCF=LP.Character.HumanoidRootPart.CFrame
+        end
+    end
+})
+
+QuantumTab:CreateToggle({Name="Bring Mob",CurrentValue=true,Callback=function(v)State.Bring=v end})
+QuantumTab:CreateToggle({Name="Lock / Freeze Mob",CurrentValue=true,Callback=function(v)State.Lock=v end})
+QuantumTab:CreateToggle({Name="Fast Attack",CurrentValue=true,Callback=function(v)State.Fast=v end})
+QuantumTab:CreateToggle({Name="Auto Equip Weapon",CurrentValue=true,Callback=function(v)State.AutoEquip=v end})
+QuantumTab:CreateToggle({Name="Auto Buso",CurrentValue=true,Callback=function(v)State.AutoBuso=v end})
+QuantumTab:CreateToggle({Name="Auto Observation (Ken)",CurrentValue=true,Callback=function(v)State.AutoKen=v end})
+
+QuantumTab:CreateSlider({
+    Name="Height Offset (Safe)",
+    Range={5,25},Increment=1,CurrentValue=12,
+    Callback=function(v)State.OffsetY=v end
+})
+QuantumTab:CreateSlider({
+    Name="Pull Distance",
+    Range={2,8},Increment=1,CurrentValue=4,
+    Callback=function(v)State.Pull=v end
+})
+QuantumTab:CreateSlider({
+    Name="Quantum Speed",
+    Range={0.05,0.30},Increment=0.01,CurrentValue=0.15,
+    Callback=function(v)State.Speed=v end
+})
+QuantumTab:CreateSlider({
+    Name="Target Range",
+    Range={50,400},Increment=10,CurrentValue=200,
+    Callback=function(v)State.TargetRange=v end
+})
+
+QuantumTab:CreateDropdown({
+    Name="Preset",
+    Options={"Safe","Fast","Ultra"},
+    CurrentOption="Safe",
+    Callback=function(v)
+        if v=="Safe" then
+            State.OffsetY=14; State.Pull=4; State.Speed=0.20
+        elseif v=="Fast" then
+            State.OffsetY=10; State.Pull=3; State.Speed=0.12
+        elseif v=="Ultra" then
+            State.OffsetY=7; State.Pull=2; State.Speed=0.08
+        end
+    end
+})
+
+PlayerTab:CreateToggle({
+    Name="Noclip",
+    CurrentValue=false,
+    Callback=function(v)State.Noclip=v end
+})
+
+-- ======================
+-- CORE LOOPS (QUANTUM)
+-- ======================
+task.spawn(function()
+    while task.wait() do
+        if State.Quantum and FarmCF and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
+            pcall(function()
+                -- giữ player đứng yên trên cao
+                LP.Character.HumanoidRootPart.CFrame = FarmCF * CFrame.new(0,State.OffsetY,0)
+
+                local mob=GetClosestMob()
+                if mob then
+                    if State.Bring then
+                        mob.HumanoidRootPart.CFrame = FarmCF * CFrame.new(0,0,-State.Pull)
+                        mob.HumanoidRootPart.CanCollide=false
+                    end
+                    if State.Lock then
+                        mob.Humanoid.WalkSpeed=0
+                        mob.Humanoid.JumpPower=0
+                        mob.Humanoid:ChangeState(11)
+                    end
+                    if State.AutoEquip then EquipWeapon() end
+                end
+            end)
+        end
+        task.wait(State.Speed)
     end
 end)
 
 task.spawn(function()
     while task.wait() do
-        if State.FastAttack then Click() end
+        if State.Quantum and State.Fast then Click() end
     end
 end)
 
 task.spawn(function()
     while task.wait(2) do
-        if State.AutoBuso then
-            pcall(function()
-                RS.Remotes.CommF_:InvokeServer("Buso")
-            end)
+        if State.Quantum and State.AutoBuso then
+            pcall(function() RS.Remotes.CommF_:InvokeServer("Buso") end)
         end
-        if State.AutoKen then
-            pcall(function()
-                RS.Remotes.CommF_:InvokeServer("Ken", true)
-            end)
-        end
-    end
-end)
-
-task.spawn(function()
-    while task.wait() do
-        if State.BringMob then
-            for _,v in pairs(workspace.Enemies:GetChildren()) do
-                if v:FindFirstChild("HumanoidRootPart") then
-                    v.HumanoidRootPart.CFrame =
-                        LP.Character.HumanoidRootPart.CFrame * CFrame.new(0,0,-3)
-                end
-            end
-        end
-        if State.LockMob then
-            for _,v in pairs(workspace.Enemies:GetChildren()) do
-                if v:FindFirstChild("Humanoid") then
-                    v.Humanoid.WalkSpeed = 0
-                    v.Humanoid.JumpPower = 0
-                end
-            end
+        if State.Quantum and State.AutoKen then
+            pcall(function() RS.Remotes.CommF_:InvokeServer("Ken",true) end)
         end
     end
 end)
 
 RunService.Stepped:Connect(function()
-    if State.Noclip then
+    if State.Noclip and LP.Character then
         for _,v in pairs(LP.Character:GetDescendants()) do
-            if v:IsA("BasePart") then v.CanCollide = false end
+            if v:IsA("BasePart") then v.CanCollide=false end
         end
     end
 end)
 
---// UI TABS
-local FarmTab = Window:CreateTab("⚔ Auto Farm")
-local CombatTab = Window:CreateTab("💥 Combat")
-local PlayerTab = Window:CreateTab("👤 Player")
-
---// FARM
-FarmTab:CreateToggle({Name="Auto Farm Level", Callback=function(v) State.AutoFarm=v end})
-FarmTab:CreateToggle({Name="Bring Mob", Callback=function(v) State.BringMob=v end})
-FarmTab:CreateToggle({Name="Lock Mob", Callback=function(v) State.LockMob=v end})
-
---// COMBAT
-CombatTab:CreateToggle({Name="Auto Equip Weapon", Callback=function(v) State.AutoEquip=v end})
-CombatTab:CreateToggle({Name="Auto Attack", Callback=function(v) State.AutoAttack=v end})
-CombatTab:CreateToggle({Name="Fast Attack", Callback=function(v) State.FastAttack=v end})
-CombatTab:CreateToggle({Name="Auto Buso", Callback=function(v) State.AutoBuso=v end})
-CombatTab:CreateToggle({Name="Auto Observation (Ken)", Callback=function(v) State.AutoKen=v end})
-
---// PLAYER
-PlayerTab:CreateToggle({Name="Noclip", Callback=function(v) State.Noclip=v end})
-
 Rayfield:Notify({
-    Title = "📺 TITAN TIVI MAN HUB",
-    Content = "ALL FEATURES IN RAYFIELD UI",
-    Duration = 6
+    Title="⚛️ Quantum Ultimate",
+    Content="ALL FEATURES ARE IN RAYFIELD",
+    Duration=6
 })
