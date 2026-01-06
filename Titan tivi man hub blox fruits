@@ -1,299 +1,149 @@
---====================================================
--- TITAN TIVI MAN HUB | BLOX FRUITS | FULL RAYFIELD
---====================================================
-
+--================ LOAD RAYFIELD =================
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
 local Window = Rayfield:CreateWindow({
     Name = "📺 Titan Tivi Man Hub | Blox Fruits",
     LoadingTitle = "Titan Tivi Man Hub",
-    LoadingSubtitle = "Full Rayfield Edition",
+    LoadingSubtitle = "Rayfield Edition",
     ConfigurationSaving = {
         Enabled = true,
         FolderName = "TitanTiviMan",
         FileName = "BloxFruits"
-    }
+    },
+    KeySystem = false
 })
 
 --================ SERVICES =================
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 local VirtualUser = game:GetService("VirtualUser")
-local TeleportService = game:GetService("TeleportService")
+
 local LP = Players.LocalPlayer
 
---================ STATE =================
+--================ STATES =================
 local State = {
     AutoFarm = false,
-    BossPriority = true,
-    NotifyBoss = true,
-    NotifyDead = true
+    Aim = false
 }
 
-local AimState = {
-    Enabled = false,
-    FOV = 150
-}
-
-local ComboState = {
-    AutoHaki = false,
-    AutoEquip = false
-}
-
---================ UTIL =================
-local function Notify(t,c,d)
-    Rayfield:Notify({
-        Title = t,
-        Content = c,
-        Duration = d or 4
-    })
-end
-
+--================ UTILS =================
 local function Char()
     return LP.Character or LP.CharacterAdded:Wait()
 end
 
---================ FLY (BAY CAO) =================
-local function FlyTo(cf)
-    local hrp = Char():WaitForChild("HumanoidRootPart")
+local function HRP()
+    return Char():WaitForChild("HumanoidRootPart")
+end
 
-    local bv = Instance.new("BodyVelocity")
-    bv.MaxForce = Vector3.new(9e9,9e9,9e9)
-    bv.Parent = hrp
-
-    local bg = Instance.new("BodyGyro")
-    bg.MaxTorque = Vector3.new(9e9,9e9,9e9)
-    bg.Parent = hrp
-
-    for _=1,35 do
-        if not State.AutoFarm then break end
-        local dir = (cf.Position - hrp.Position)
-        bv.Velocity = dir.Unit * math.clamp(dir.Magnitude * 4, 80, 350)
-        bg.CFrame = CFrame.new(hrp.Position, cf.Position)
-        task.wait()
+--================ NPC =================
+local function GetNPC()
+    local near, dist = nil, math.huge
+    for _,v in pairs(workspace.Enemies:GetChildren()) do
+        if v:FindFirstChild("Humanoid")
+        and v.Humanoid.Health > 0
+        and v:FindFirstChild("HumanoidRootPart") then
+            local d = (v.HumanoidRootPart.Position - HRP().Position).Magnitude
+            if d < dist then
+                dist = d
+                near = v
+            end
+        end
     end
-
-    bv:Destroy()
-    bg:Destroy()
+    return near
 end
 
---================ ATTACK =================
-local function Attack()
-    VirtualUser:Button1Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-    task.wait()
-    VirtualUser:Button1Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-end
-
---================ FARM ENEMY =================
-local function FarmEnemy(enemy)
-    if not enemy or not enemy:FindFirstChild("Humanoid") then return end
-    if enemy.Humanoid.Health <= 0 then return end
-    local hrp = enemy:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-
-    FlyTo(hrp.CFrame * CFrame.new(0,18,0))
-
-    repeat
-        if not State.AutoFarm then break end
-        FlyTo(hrp.CFrame * CFrame.new(0,12,0))
-        Attack()
-        task.wait(0.1)
-    until enemy.Humanoid.Health <= 0 or not enemy.Parent
-end
-
---================ BOSS TABLE =================
-local BossTable = {
-    {Boss="Tide Keeper"},
-    {Boss="Thunder God"},
-    {Boss="Cursed Captain"},
-    {Boss="Dough King"},
-    {Boss="Rip Indra"}
-}
-
---================ BOSS NOTIFY =================
-local BossStatus = {}
+--================ AIR COMBAT (FIX ALL) =================
+local HEIGHT = 16
+local DIST = 6
 
 task.spawn(function()
-    while task.wait(1) do
-        for _,b in pairs(BossTable) do
-            local alive = false
-            for _,m in pairs(workspace.Enemies:GetChildren()) do
-                if m.Name == b.Boss and m:FindFirstChild("Humanoid") and m.Humanoid.Health > 0 then
-                    alive = true
-                    break
-                end
-            end
+    while task.wait(0.15) do
+        if State.AutoFarm then
+            local npc = GetNPC()
+            if npc then
+                local nhrp = npc.HumanoidRootPart
+                local hrp = HRP()
 
-            if alive and not BossStatus[b.Boss] then
-                BossStatus[b.Boss] = true
-                if State.NotifyBoss then
-                    Notify("🔥 Boss Spawned", b.Boss.." đã xuất hiện!",6)
-                end
-            end
+                -- ÉP BAY TRÊN CAO
+                hrp.Velocity = Vector3.zero
+                hrp.CFrame =
+                    nhrp.CFrame
+                    * CFrame.new(0, HEIGHT, DIST)
+                    * CFrame.Angles(math.rad(-90), 0, 0)
 
-            if not alive and BossStatus[b.Boss] then
-                BossStatus[b.Boss] = nil
-                if State.NotifyDead then
-                    Notify("☠ Boss Defeated", b.Boss.." đã bị hạ!",4)
-                end
+                -- ÉP NPC ĐỨNG YÊN
+                nhrp.Velocity = Vector3.zero
+
+                -- ĐÁNH LIÊN TỤC
+                VirtualUser:Button1Down(Vector2.new(0,0))
+                task.wait(0.05)
+                VirtualUser:Button1Up(Vector2.new(0,0))
             end
         end
     end
 end)
 
---================ AUTO FARM LOOP =================
-task.spawn(function()
-    while task.wait() do
-        if not State.AutoFarm then continue end
-
-        local target = nil
-
-        if State.BossPriority then
-            for _,b in pairs(BossTable) do
-                for _,m in pairs(workspace.Enemies:GetChildren()) do
-                    if m.Name == b.Boss and m:FindFirstChild("Humanoid") and m.Humanoid.Health > 0 then
-                        target = m
-                        break
-                    end
-                end
-                if target then break end
-            end
-        end
-
-        if not target then
-            for _,m in pairs(workspace.Enemies:GetChildren()) do
-                if m:FindFirstChild("Humanoid") and m.Humanoid.Health > 0 then
-                    target = m
-                    break
-                end
-            end
-        end
-
-        if target then
-            FarmEnemy(target)
+--================ AIM =================
+RunService.RenderStepped:Connect(function()
+    if State.Aim then
+        local npc = GetNPC()
+        if npc and npc:FindFirstChild("Head") then
+            workspace.CurrentCamera.CFrame =
+                CFrame.new(
+                    workspace.CurrentCamera.CFrame.Position,
+                    npc.Head.Position
+                )
         end
     end
 end)
 
---================ AIMBOT =================
-task.spawn(function()
-    while task.wait() do
-        if not AimState.Enabled then continue end
-        local cam = workspace.CurrentCamera
-        local closest, dist = nil, AimState.FOV
+--================ RAYFIELD TABS =================
+local StartTab = Window:CreateTab("🚀 Start", 4483362458)
+local FarmTab  = Window:CreateTab("⚛️ Auto Farm", 4483362458)
+local AimTab   = Window:CreateTab("🎯 Aim", 4483362458)
 
-        for _,m in pairs(workspace.Enemies:GetChildren()) do
-            if m:FindFirstChild("HumanoidRootPart") and m:FindFirstChild("Humanoid") and m.Humanoid.Health > 0 then
-                local pos, onscreen = cam:WorldToViewportPoint(m.HumanoidRootPart.Position)
-                if onscreen then
-                    local d = (Vector2.new(pos.X,pos.Y) -
-                              Vector2.new(cam.ViewportSize.X/2, cam.ViewportSize.Y/2)).Magnitude
-                    if d < dist then
-                        dist = d
-                        closest = m
-                    end
-                end
-            end
-        end
-
-        if closest then
-            cam.CFrame = CFrame.new(cam.CFrame.Position, closest.HumanoidRootPart.Position)
-        end
+--================ START =================
+StartTab:CreateButton({
+    Name = "START ALL (AIR FARM)",
+    Callback = function()
+        State.AutoFarm = true
+        State.Aim = true
+        Rayfield:Notify({
+            Title = "Titan Tivi Man Hub",
+            Content = "ĐÁNH 100% TRÊN KHÔNG\nKhông chạm đất",
+            Duration = 4
+        })
     end
-end)
+})
 
---================ COMBO =================
-task.spawn(function()
-    while task.wait(1) do
-        if ComboState.AutoHaki then
-            pcall(function()
-                ReplicatedStorage.Remotes.CommF_:InvokeServer("Buso")
-            end)
-        end
-
-        if ComboState.AutoEquip then
-            local bp = LP.Backpack:GetChildren()
-            if #bp > 0 then
-                Char().Humanoid:EquipTool(bp[1])
-            end
-        end
+StartTab:CreateButton({
+    Name = "STOP ALL",
+    Callback = function()
+        State.AutoFarm = false
+        State.Aim = false
     end
-end)
+})
 
---================ COUNTDOWN =================
-local function Countdown()
-    Notify("⏳ Ready","3",1); task.wait(1)
-    Notify("⏳ Ready","2",1); task.wait(1)
-    Notify("⏳ Ready","1",1); task.wait(1)
-    Notify("🚀 GO","Auto Farm bắt đầu!",3)
-end
-
---================ UI =================
-local FarmTab = Window:CreateTab("⚛️ Auto Farm")
+--================ TOGGLES =================
 FarmTab:CreateToggle({
-    Name="Auto Farm (Boss > NPC)",
-    CurrentValue=false,
-    Callback=function(v)
+    Name = "Auto Farm (Air)",
+    CurrentValue = false,
+    Callback = function(v)
         State.AutoFarm = v
-        if v then Countdown() end
     end
 })
-FarmTab:CreateToggle({
-    Name="Boss Priority",
-    CurrentValue=true,
-    Callback=function(v) State.BossPriority = v end
-})
 
-local AimTab = Window:CreateTab("🎯 Aim")
 AimTab:CreateToggle({
-    Name="Enable Aimbot",
-    CurrentValue=false,
-    Callback=function(v) AimState.Enabled = v end
-})
-AimTab:CreateSlider({
-    Name="Aim FOV",
-    Range={50,400},
-    Increment=10,
-    CurrentValue=150,
-    Callback=function(v) AimState.FOV = v end
-})
-
-local ComboTab = Window:CreateTab("⚔️ Combo")
-ComboTab:CreateToggle({
-    Name="Auto Haki",
-    CurrentValue=false,
-    Callback=function(v) ComboState.AutoHaki = v end
-})
-ComboTab:CreateToggle({
-    Name="Auto Equip Weapon",
-    CurrentValue=false,
-    Callback=function(v) ComboState.AutoEquip = v end
-})
-
-local NotifyTab = Window:CreateTab("🔔 Boss Notify")
-NotifyTab:CreateToggle({
-    Name="Notify Boss Spawn",
-    CurrentValue=true,
-    Callback=function(v) State.NotifyBoss = v end
-})
-NotifyTab:CreateToggle({
-    Name="Notify Boss Defeated",
-    CurrentValue=true,
-    Callback=function(v) State.NotifyDead = v end
-})
-
-local MiscTab = Window:CreateTab("🛠 Misc")
-MiscTab:CreateButton({
-    Name="Rejoin Server",
-    Callback=function()
-        TeleportService:Teleport(game.PlaceId, LP)
-    end
-})
-MiscTab:CreateButton({
-    Name="Reset Character",
-    Callback=function()
-        Char():BreakJoints()
+    Name = "Aimbot NPC",
+    CurrentValue = false,
+    Callback = function(v)
+        State.Aim = v
     end
 })
 
-Notify("Titan Tivi Man Hub","Load xong – Full Rayfield 💀📺",5)
+Rayfield:Notify({
+    Title = "Titan Tivi Man Hub",
+    Content = "Loaded | Rayfield Air Combat",
+    Duration = 3
+})
