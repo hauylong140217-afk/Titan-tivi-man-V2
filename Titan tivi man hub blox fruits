@@ -1,0 +1,160 @@
+--// 📺 TITAN TIVI MAN HUB | RAYFIELD ONLY
+--// BLOX FRUITS | NO KEY
+
+repeat task.wait() until game:IsLoaded()
+
+--// Anti AFK
+pcall(function()
+    local vu = game:GetService("VirtualUser")
+    game:GetService("Players").LocalPlayer.Idled:Connect(function()
+        vu:Button2Down(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
+        task.wait(1)
+        vu:Button2Up(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
+    end)
+end)
+
+--// Rayfield
+local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+
+local Window = Rayfield:CreateWindow({
+    Name = "📺 TITAN TIVI MAN HUB | BLOX FRUITS",
+    LoadingTitle = "TITAN TIVI MAN HUB",
+    LoadingSubtitle = "RAYFIELD ONLY",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "TitanTiviManHub",
+        FileName = "RayfieldOnly"
+    },
+    KeySystem = false
+})
+
+--// Services
+local Players = game:GetService("Players")
+local RS = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local VirtualUser = game:GetService("VirtualUser")
+local LP = Players.LocalPlayer
+
+--// States (ALL UI)
+local State = {
+    AutoFarm = false,
+    AutoAttack = false,
+    FastAttack = false,
+    AutoEquip = false,
+    AutoBuso = false,
+    AutoKen = false,
+    BringMob = false,
+    LockMob = false,
+    Noclip = false
+}
+
+--// Functions
+local function EquipWeapon()
+    for _,v in pairs(LP.Backpack:GetChildren()) do
+        if v:IsA("Tool") then
+            LP.Character.Humanoid:EquipTool(v)
+            break
+        end
+    end
+end
+
+local function Click()
+    VirtualUser:Button1Down(Vector2.new(0,0))
+    task.wait()
+    VirtualUser:Button1Up(Vector2.new(0,0))
+end
+
+--// Core Loops
+task.spawn(function()
+    while task.wait(0.25) do
+        if State.AutoFarm then
+            for _,mob in pairs(workspace.Enemies:GetChildren()) do
+                if mob:FindFirstChild("Humanoid")
+                and mob.Humanoid.Health > 0 then
+                    pcall(function()
+                        LP.Character.HumanoidRootPart.CFrame =
+                            mob.HumanoidRootPart.CFrame * CFrame.new(0,10,0)
+                        if State.AutoEquip then EquipWeapon() end
+                        if State.AutoAttack then Click() end
+                    end)
+                end
+            end
+        end
+    end
+end)
+
+task.spawn(function()
+    while task.wait() do
+        if State.FastAttack then Click() end
+    end
+end)
+
+task.spawn(function()
+    while task.wait(2) do
+        if State.AutoBuso then
+            pcall(function()
+                RS.Remotes.CommF_:InvokeServer("Buso")
+            end)
+        end
+        if State.AutoKen then
+            pcall(function()
+                RS.Remotes.CommF_:InvokeServer("Ken", true)
+            end)
+        end
+    end
+end)
+
+task.spawn(function()
+    while task.wait() do
+        if State.BringMob then
+            for _,v in pairs(workspace.Enemies:GetChildren()) do
+                if v:FindFirstChild("HumanoidRootPart") then
+                    v.HumanoidRootPart.CFrame =
+                        LP.Character.HumanoidRootPart.CFrame * CFrame.new(0,0,-3)
+                end
+            end
+        end
+        if State.LockMob then
+            for _,v in pairs(workspace.Enemies:GetChildren()) do
+                if v:FindFirstChild("Humanoid") then
+                    v.Humanoid.WalkSpeed = 0
+                    v.Humanoid.JumpPower = 0
+                end
+            end
+        end
+    end
+end)
+
+RunService.Stepped:Connect(function()
+    if State.Noclip then
+        for _,v in pairs(LP.Character:GetDescendants()) do
+            if v:IsA("BasePart") then v.CanCollide = false end
+        end
+    end
+end)
+
+--// UI TABS
+local FarmTab = Window:CreateTab("⚔ Auto Farm")
+local CombatTab = Window:CreateTab("💥 Combat")
+local PlayerTab = Window:CreateTab("👤 Player")
+
+--// FARM
+FarmTab:CreateToggle({Name="Auto Farm Level", Callback=function(v) State.AutoFarm=v end})
+FarmTab:CreateToggle({Name="Bring Mob", Callback=function(v) State.BringMob=v end})
+FarmTab:CreateToggle({Name="Lock Mob", Callback=function(v) State.LockMob=v end})
+
+--// COMBAT
+CombatTab:CreateToggle({Name="Auto Equip Weapon", Callback=function(v) State.AutoEquip=v end})
+CombatTab:CreateToggle({Name="Auto Attack", Callback=function(v) State.AutoAttack=v end})
+CombatTab:CreateToggle({Name="Fast Attack", Callback=function(v) State.FastAttack=v end})
+CombatTab:CreateToggle({Name="Auto Buso", Callback=function(v) State.AutoBuso=v end})
+CombatTab:CreateToggle({Name="Auto Observation (Ken)", Callback=function(v) State.AutoKen=v end})
+
+--// PLAYER
+PlayerTab:CreateToggle({Name="Noclip", Callback=function(v) State.Noclip=v end})
+
+Rayfield:Notify({
+    Title = "📺 TITAN TIVI MAN HUB",
+    Content = "ALL FEATURES IN RAYFIELD UI",
+    Duration = 6
+})
