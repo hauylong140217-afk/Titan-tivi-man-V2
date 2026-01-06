@@ -1,250 +1,79 @@
 --====================================================
--- Titan Tivi Man Hub | Blox Fruits FINAL
--- Rayfield UI | Auto Farm + Boss Priority + Aimbot
+-- TITAN TIVI MAN HUB | BLOX FRUITS | RAYFIELD
 --====================================================
 
--- Load Rayfield
+-- Rayfield
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
 local Window = Rayfield:CreateWindow({
-    Name = "📺 Titan Tivi Man Hub | Blox Fruits (FINAL)",
+    Name = "📺 Titan Tivi Man Hub | Blox Fruits",
     LoadingTitle = "Titan Tivi Man Hub",
-    LoadingSubtitle = "Rayfield Quantum Style",
+    LoadingSubtitle = "Rayfield Edition",
     ConfigurationSaving = {
         Enabled = true,
         FolderName = "TitanTiviMan",
-        FileName = "BloxFruitsFinal"
+        FileName = "BloxFruits"
     }
 })
 
 -- Services
 local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local RS = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
+local VirtualUser = game:GetService("VirtualUser")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LP = Players.LocalPlayer
-local Char = LP.Character or LP.CharacterAdded:Wait()
-local HRP = Char:WaitForChild("HumanoidRootPart")
-local Hum = Char:WaitForChild("Humanoid")
-local Cam = workspace.CurrentCamera
 
-LP.CharacterAdded:Connect(function(c)
-    Char = c
-    HRP = c:WaitForChild("HumanoidRootPart")
-    Hum = c:WaitForChild("Humanoid")
-end)
-
---================ STATE =================
+-- State
 local State = {
     AutoFarm = false,
-    FlySpeed = 320,
-    FastAttack = true,
-    Aimbot = false,
-    FOV = 250
+    BossPriority = true,
+    NotifyBoss = true,
+    NotifyDead = true
 }
 
---================ UTILS =================
-local function TweenTo(cf)
-    local dist = (HRP.Position - cf.Position).Magnitude
-    local t = dist / State.FlySpeed
-    local tw = TweenService:Create(
-        HRP,
-        TweenInfo.new(t, Enum.EasingStyle.Linear),
-        {CFrame = cf}
-    )
-    tw:Play()
-    tw.Completed:Wait()
+--====================================================
+-- UTIL
+--====================================================
+local function Notify(t,c,d)
+    Rayfield:Notify({
+        Title = t,
+        Content = c,
+        Duration = d or 4
+    })
 end
 
-local function EquipWeapon()
-    for _,v in pairs(LP.Backpack:GetChildren()) do
-        if v:IsA("Tool") then
-            Hum:EquipTool(v)
-            return
-        end
-    end
+local function Char()
+    return LP.Character or LP.CharacterAdded:Wait()
 end
 
-local function Click()
-    pcall(function() mouse1click() end)
+--====================================================
+-- FLY (BAY CAO MẠNH)
+--====================================================
+local function FlyTo(cf)
+    local hrp = Char():WaitForChild("HumanoidRootPart")
+
+    local bv = Instance.new("BodyVelocity")
+    bv.MaxForce = Vector3.new(9e9,9e9,9e9)
+    bv.Velocity = Vector3.zero
+    bv.Parent = hrp
+
+    local bg = Instance.new("BodyGyro")
+    bg.MaxTorque = Vector3.new(9e9,9e9,9e9)
+    bg.Parent = hrp
+
+    for _=1,40 do
+        if not State.AutoFarm then break end
+        local dir = (cf.Position - hrp.Position)
+        bv.Velocity = dir.Unit * math.clamp(dir.Magnitude * 4, 80, 350)
+        bg.CFrame = CFrame.new(hrp.Position, cf.Position)
+        task.wait()
+    end
+
+    bv:Destroy()
+    bg:Destroy()
 end
 
-local function FindEnemy(name)
-    for _,m in pairs(workspace.Enemies:GetChildren()) do
-        if m.Name == name and m:FindFirstChild("Humanoid")
-        and m.Humanoid.Health > 0 then
-            return m
-        end
-    end
-end
-
-local function WaitEnemy(name)
-    for i = 1, 80 do
-        local m = FindEnemy(name)
-        if m then return m end
-        task.wait(0.4)
-    end
-end
-
---================ QUEST TABLE (GỌN + ỔN ĐỊNH) =================
-local QuestTable = {
-    {Min=1,Max=700,Quest="BanditQuest1",ID=1,Mob="Bandit",NPC=CFrame.new(1061,16,1547)},
-    {Min=700,Max=1500,Quest="Area1Quest",ID=1,Mob="Raider",NPC=CFrame.new(-424,73,1837)},
-    {Min=1500,Max=2550,Quest="HauntedQuest1",ID=1,Mob="Reborn Skeleton",NPC=CFrame.new(-9515,172,6071)}
-}
-
-local function GetQuest()
-    local lv = LP.Data.Level.Value
-    for _,q in pairs(QuestTable) do
-        if lv >= q.Min and lv < q.Max then
-            return q
-        end
-    end
-end
-
---================ BOSS PRIORITY =================
-local BossTable = {
-    {Quest="SkyBossQuest",ID=1,NPC=CFrame.new(-7923,5545,-636),Boss="Thunder God"},
-    {Quest="TideKeeperQuest",ID=1,NPC=CFrame.new(-3041,238,2136),Boss="Tide Keeper"}
-}
-
-local function GetAliveBoss()
-    for _,b in pairs(BossTable) do
-        if FindEnemy(b.Boss) then
-            return b
-        end
-    end
-end
-
---================ AUTO FARM CORE =================
-task.spawn(function()
-    while task.wait() do
-        if not State.AutoFarm then continue end
-
-        -- ƯU TIÊN BOSS
-        local boss = GetAliveBoss()
-        if boss then
-            TweenTo(boss.NPC)
-            task.wait(0.5)
-            pcall(function()
-                RS.Remotes.CommF_:InvokeServer("StartQuest", boss.Quest, boss.ID)
-            end)
-
-            local bm = WaitEnemy(boss.Boss)
-            if bm then
-                TweenTo(bm.HumanoidRootPart.CFrame * CFrame.new(0,0,6))
-                EquipWeapon()
-                repeat
-                    Click()
-                    task.wait()
-                until bm.Humanoid.Health <= 0 or not State.AutoFarm
-            end
-        else
-            -- FARM NPC THƯỜNG
-            local q = GetQuest()
-            if not q then task.wait(1) continue end
-
-            TweenTo(q.NPC)
-            task.wait(0.4)
-            pcall(function()
-                RS.Remotes.CommF_:InvokeServer("StartQuest", q.Quest, q.ID)
-            end)
-
-            while State.AutoFarm do
-                local mob = WaitEnemy(q.Mob)
-                if mob then
-                    TweenTo(mob.HumanoidRootPart.CFrame * CFrame.new(0,0,6))
-                    EquipWeapon()
-                    repeat
-                        Click()
-                        task.wait()
-                    until mob.Humanoid.Health <= 0 or not State.AutoFarm
-                end
-                task.wait(0.2)
-            end
-        end
-    end
-end)
-
---================ AIMBOT =================
-local function GetClosestEnemy()
-    local closest, dist = nil, math.huge
-    for _,m in pairs(workspace.Enemies:GetChildren()) do
-        if m:FindFirstChild("HumanoidRootPart")
-        and m:FindFirstChild("Humanoid")
-        and m.Humanoid.Health > 0 then
-            local pos, onScreen = Cam:WorldToViewportPoint(m.HumanoidRootPart.Position)
-            if onScreen then
-                local mag = (Vector2.new(pos.X,pos.Y)
-                - Vector2.new(Cam.ViewportSize.X/2,Cam.ViewportSize.Y/2)).Magnitude
-                if mag < dist and mag < State.FOV then
-                    dist = mag
-                    closest = m
-                end
-            end
-        end
-    end
-    return closest
-end
-
-RunService.RenderStepped:Connect(function()
-    if State.Aimbot then
-        local t = GetClosestEnemy()
-        if t then
-            Cam.CFrame = CFrame.new(Cam.CFrame.Position, t.HumanoidRootPart.Position)
-        end
-    end
-end)
-
---================ RAYFIELD UI =================
-local FarmTab = Window:CreateTab("⚛️ Auto Farm")
-local AimTab = Window:CreateTab("🎯 Aimbot")
-local MiscTab = Window:CreateTab("🛠 Misc")
-
-FarmTab:CreateToggle({
-    Name = "Enable Auto Farm (Boss > NPC)",
-    CurrentValue = false,
-    Callback = function(v)
-        State.AutoFarm = v
-    end
-})
-
-FarmTab:CreateSlider({
-    Name = "Fly Speed",
-    Range = {150,500},
-    Increment = 10,
-    CurrentValue = 320,
-    Callback = function(v)
-        State.FlySpeed = v
-    end
-})
-
-AimTab:CreateToggle({
-    Name = "Enable Aimbot",
-    CurrentValue = false,
-    Callback = function(v)
-        State.Aimbot = v
-    end
-})
-
-AimTab:CreateSlider({
-    Name = "Aimbot FOV",
-    Range = {100,600},
-    Increment = 25,
-    CurrentValue = 250,
-    Callback = function(v)
-        State.FOV = v
-    end
-})
-
-MiscTab:CreateButton({
-    Name = "Reset Character",
-    Callback = function()
-        Hum.Health = 0
-    end
-})
-
-MiscTab:CreateParagraph({
-    Title = "Titan Tivi Man Hub",
-    Content = "FINAL | Rayfield Only\nBoss Priority + Auto Quest + Aimbot\n💀 Dán là chạy"
-})
+--====================================================
+-- ATTACK (KHÔNG ĐỨNG IM)
+--====================================================
+local function Attack()
+    VirtualUser:Button1Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
