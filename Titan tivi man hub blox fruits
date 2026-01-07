@@ -1,23 +1,23 @@
 --====================================================
 -- 📺 TITAN TIVI MAN HUB | BLOX FRUITS | RAYFIELD FINAL
+-- Anti Kick • Safe Mode • Human Like
 --====================================================
 
--- Load Rayfield
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
 local Window = Rayfield:CreateWindow({
-    Name = "📺 Titan Tivi Man Hub | FINAL",
+    Name = "📺 Titan Tivi Man Hub | Anti Kick",
     LoadingTitle = "Titan Tivi Man Hub",
-    LoadingSubtitle = "Auto Farm • Dodge • Raid",
+    LoadingSubtitle = "Safe • Stable • Strong",
     ConfigurationSaving = {
         Enabled = true,
         FolderName = "TitanTiviMan",
-        FileName = "Final"
+        FileName = "FinalSafe"
     },
     KeySystem = false
 })
 
--- Services
+-- SERVICES
 local Players = game:GetService("Players")
 local RS = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -25,7 +25,7 @@ local VIM = game:GetService("VirtualInputManager")
 local LP = Players.LocalPlayer
 local CommF = RS.Remotes.CommF_
 
--- State
+-- STATE
 local State = {
     AutoFarm = false,
     AutoQuest = true,
@@ -33,10 +33,12 @@ local State = {
     AutoDodge = false,
     Aim = false,
     AutoRaid = false,
-    AutoAwaken = false
+    AutoAwaken = false,
+    SafeMode = false,
+    HumanDelay = true
 }
 
--- Utils
+-- BASIC
 local function Char()
     return LP.Character or LP.CharacterAdded:Wait()
 end
@@ -44,11 +46,9 @@ local function HRP()
     return Char():WaitForChild("HumanoidRootPart")
 end
 
--- Auto Equip Combat
+-- AUTO EQUIP COMBAT
 local function EquipCombat()
-    local char = LP.Character
-    if not char then return end
-    local hum = char:FindFirstChildOfClass("Humanoid")
+    local hum = Char():FindFirstChildOfClass("Humanoid")
     if not hum then return end
     for _,tool in pairs(LP.Backpack:GetChildren()) do
         if tool:IsA("Tool") then
@@ -67,15 +67,36 @@ LP.CharacterAdded:Connect(function()
     EquipCombat()
 end)
 
+-- ADMIN / PLAYER NEAR (SAFE MODE)
+local function PlayerNear()
+    for _,plr in pairs(Players:GetPlayers()) do
+        if plr ~= LP and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+            if (plr.Character.HumanoidRootPart.Position - HRP().Position).Magnitude < 120 then
+                return true
+            end
+        end
+    end
+    return false
+end
+
 task.spawn(function()
-    while task.wait(1) do
-        if State.AutoFarm then
-            EquipCombat()
+    while task.wait(1.5) do
+        if State.SafeMode and PlayerNear() then
+            for k in pairs(State) do
+                if k ~= "SafeMode" then
+                    State[k] = false
+                end
+            end
+            Rayfield:Notify({
+                Title = "SAFE MODE",
+                Content = "Có người chơi gần – AutoFarm đã tắt",
+                Duration = 4
+            })
         end
     end
 end)
 
--- Quest
+-- QUEST
 local function HasQuest()
     local gui = LP.PlayerGui:FindFirstChild("Main")
     return gui and gui:FindFirstChild("Quest") and gui.Quest.Visible
@@ -91,7 +112,7 @@ task.spawn(function()
     end
 end)
 
--- Target
+-- TARGET
 local function GetBoss()
     for _,v in pairs(workspace.Enemies:GetChildren()) do
         if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0
@@ -121,23 +142,30 @@ local function GetTarget()
     return GetBoss() or GetNPC()
 end
 
--- Air Farm
+-- AIR FARM (HUMAN LIKE)
 task.spawn(function()
-    while task.wait(0.12) do
+    while task.wait(0.15) do
         if State.AutoFarm then
             local t = GetTarget()
             if t and t:FindFirstChild("HumanoidRootPart") then
+                if State.HumanDelay and math.random(1,10) <= 2 then
+                    task.wait(math.random(2,4))
+                end
+                local angle = tick() % 6
                 HRP().AssemblyLinearVelocity = Vector3.zero
                 HRP().CFrame =
-                    t.HumanoidRootPart.CFrame
-                    * CFrame.new(0,25,6)
-                    * CFrame.Angles(math.rad(-90),0,0)
+                    t.HumanoidRootPart.CFrame *
+                    CFrame.new(
+                        math.cos(angle)*6,
+                        22 + math.random(-2,2),
+                        math.sin(angle)*6
+                    )
             end
         end
     end
 end)
 
--- Auto Skill (NO M1)
+-- AUTO SKILL (NO M1)
 local Skills = {Enum.KeyCode.Z,Enum.KeyCode.X,Enum.KeyCode.C,Enum.KeyCode.V,Enum.KeyCode.F}
 local idx = 1
 task.spawn(function()
@@ -152,7 +180,7 @@ task.spawn(function()
     end
 end)
 
--- Aim
+-- AIM
 RunService.RenderStepped:Connect(function()
     if State.Aim then
         local t = GetTarget()
@@ -163,39 +191,31 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Auto Dodge Sea 1/2/3
+-- AUTO DODGE (NOT 100%)
 local DodgeCD = false
 local LastHP = 0
 task.spawn(function()
-    while task.wait(0.1) do
+    while task.wait(0.12) do
         if not State.AutoDodge or not State.AutoFarm then continue end
         local hum = Char():FindFirstChild("Humanoid")
         if not hum then continue end
         if LastHP == 0 then LastHP = hum.Health end
         local drop = LastHP - hum.Health
         LastHP = hum.Health
-        local t = GetTarget()
-        local need = false
-        if drop > hum.MaxHealth * 0.08 then need = true end
-        if t and t:FindFirstChild("HumanoidRootPart") then
-            if (t.HumanoidRootPart.Position - HRP().Position).Magnitude < 25 then
-                need = true
-            end
-        end
-        if need and not DodgeCD then
+        if drop > hum.MaxHealth * 0.08 and math.random(1,100) <= 70 and not DodgeCD then
             DodgeCD = true
             HRP().CFrame = HRP().CFrame * CFrame.new(
-                math.random(-30,30),
+                math.random(-25,25),
                 math.random(35,55),
-                math.random(-20,-10)
+                math.random(-15,-10)
             )
-            task.wait(0.45)
+            task.wait(0.5)
             DodgeCD = false
         end
     end
 end)
 
--- Auto Raid & Awaken
+-- RAID
 local RaidFruit = "Flame"
 local RaidMethod = "Fruit"
 
@@ -220,20 +240,22 @@ task.spawn(function()
     end
 end)
 
--- UI Tabs
-local StartTab   = Window:CreateTab("🚀 Start")
-local FarmTab    = Window:CreateTab("⚛️ Farm")
-local CombatTab  = Window:CreateTab("⚔️ Combat")
-local RaidTab    = Window:CreateTab("🔥 Raid")
-local GuideTab   = Window:CreateTab("📘 Hướng dẫn")
-local TutorialTab= Window:CreateTab("📘 Tutorial")
+-- TABS
+local StartTab = Window:CreateTab("🚀 Start")
+local FarmTab = Window:CreateTab("⚛️ Farm")
+local CombatTab = Window:CreateTab("⚔️ Combat")
+local RaidTab = Window:CreateTab("🔥 Raid")
+local GuideTab = Window:CreateTab("📘 Guide")
+local TutorialTab = Window:CreateTab("📘 Tutorial")
 
 StartTab:CreateButton({
-    Name = "START ALL",
+    Name = "START ALL (SAFE)",
     Callback = function()
-        for k in pairs(State) do State[k] = true end
+        State.AutoFarm = true
+        State.AutoSkill = true
+        State.AutoDodge = true
+        State.SafeMode = true
         EquipCombat()
-        Rayfield:Notify({Title="Titan Hub",Content="ALL ENABLED",Duration=3})
     end
 })
 
@@ -241,51 +263,42 @@ StartTab:CreateButton({
     Name = "🛑 STOP ALL",
     Callback = function()
         for k in pairs(State) do State[k] = false end
-        Rayfield:Notify({Title="Titan Hub",Content="ALL STOPPED",Duration=3})
     end
 })
 
-FarmTab:CreateToggle({
-    Name = "Auto Farm (Air)",
-    CurrentValue = false,
-    Callback = function(v)
-        State.AutoFarm = v
-        if v then task.wait(0.2) EquipCombat() end
-    end
-})
-
+FarmTab:CreateToggle({Name="Auto Farm (Air)",CurrentValue=false,Callback=function(v)State.AutoFarm=v end})
 CombatTab:CreateToggle({Name="Auto Skill (No M1)",CurrentValue=false,Callback=function(v)State.AutoSkill=v end})
 CombatTab:CreateToggle({Name="Aim Lock",CurrentValue=false,Callback=function(v)State.Aim=v end})
-CombatTab:CreateToggle({Name="Auto Dodge (Sea 1 / 2 / 3)",CurrentValue=false,Callback=function(v)State.AutoDodge=v end})
+CombatTab:CreateToggle({Name="Auto Dodge (Safe)",CurrentValue=false,Callback=function(v)State.AutoDodge=v end})
+CombatTab:CreateToggle({Name="🛡️ Safe Mode (Anti Kick)",CurrentValue=false,Callback=function(v)State.SafeMode=v end})
+CombatTab:CreateToggle({Name="🤖 Human Delay",CurrentValue=true,Callback=function(v)State.HumanDelay=v end})
 
 RaidTab:CreateToggle({Name="Auto Raid",CurrentValue=false,Callback=function(v)State.AutoRaid=v end})
 RaidTab:CreateDropdown({
     Name="Raid Fruit",
     Options={"Flame","Ice","Light","Magma","Dark","Buddha","Rumble"},
     CurrentOption="Flame",
-    Callback=function(v) RaidFruit=v end
+    Callback=function(v)RaidFruit=v end
 })
 RaidTab:CreateDropdown({
     Name="Raid Method",
     Options={"Fruit","Money"},
     CurrentOption="Fruit",
-    Callback=function(v) RaidMethod=v end
+    Callback=function(v)RaidMethod=v end
 })
 RaidTab:CreateToggle({Name="Auto Awaken",CurrentValue=false,Callback=function(v)State.AutoAwaken=v end})
 
--- Guide / Tutorial Content
 GuideTab:CreateParagraph({
-    Title = "Hướng dẫn sử dụng",
-    Content = "PC: Nhấn phím Shift để kịch bản hoạt động.\n\nMobile: Bật Shift Lock và nhấn 2 lần để kịch bản hoạt động."
+    Title="Hướng dẫn sử dụng",
+    Content="PC: Nhấn Shift để hoạt động.\nMobile: Bật Shift Lock và nhấn 2 lần."
 })
-
 TutorialTab:CreateParagraph({
-    Title = "How to Use",
-    Content = "PC: Press Shift to activate the script.\n\nMobile: Enable Shift Lock and tap it twice to activate the script."
+    Title="How to Use",
+    Content="PC: Press Shift to activate.\nMobile: Enable Shift Lock and tap twice."
 })
 
 Rayfield:Notify({
-    Title = "Titan Tivi Man Hub",
-    Content = "Loaded Successfully",
-    Duration = 3
+    Title="Titan Tivi Man Hub",
+    Content="Loaded | Anti Kick Enabled",
+    Duration=4
 })
