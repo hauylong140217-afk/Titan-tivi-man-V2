@@ -1,52 +1,43 @@
 --====================================================
--- 📺 TITAN TIVI MAN HUB | BLOX FRUITS | FINAL FIX
+-- 📺 TITAN TIVI MAN HUB | BLOX FRUITS | RAYFIELD FINAL
 --====================================================
 
---========== LOAD RAYFIELD ==========
+-- Load Rayfield
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
 local Window = Rayfield:CreateWindow({
-    Name = "📺 Titan Tivi Man Hub | FINAL FIX",
+    Name = "📺 Titan Tivi Man Hub | FINAL",
     LoadingTitle = "Titan Tivi Man Hub",
-    LoadingSubtitle = "Quest • Skill • Boss • Raid",
+    LoadingSubtitle = "Auto Quest • Dodge • Raid",
     ConfigurationSaving = {
         Enabled = true,
         FolderName = "TitanTiviMan",
-        FileName = "FinalFix"
+        FileName = "Final"
     },
     KeySystem = false
 })
 
---========== SERVICES ==========
+-- Services
 local Players = game:GetService("Players")
 local RS = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local VirtualInput = game:GetService("VirtualInputManager")
+local VIM = game:GetService("VirtualInputManager")
 local LP = Players.LocalPlayer
 local CommF = RS.Remotes.CommF_
 
---========== STATE ==========
+-- State
 local State = {
     AutoFarm = false,
-    UseSkill = false,
+    AutoQuest = true,
+    AutoSkill = false,
     Aim = false,
-    BossPriority = true,
+    AutoDodge = false,
     AutoRaid = false,
     AutoAwaken = false,
-    SoloRaid = false
+    StopAll = false
 }
 
---========== RAID CONFIG ==========
-local RaidConfig = {
-    Method = "Fruit",
-    Raid = "Flame"
-}
-
-local RaidList = {
-    "Flame","Ice","Light","Magma","Dark","Sand","Buddha","Quake","Rumble"
-}
-
---========== UTILS ==========
+-- Utils
 local function Char()
     return LP.Character or LP.CharacterAdded:Wait()
 end
@@ -54,15 +45,36 @@ local function HRP()
     return Char():WaitForChild("HumanoidRootPart")
 end
 
---========== QUEST FIX ==========
+-- Auto Equip Combat after death
+local function EquipCombat()
+    local hum = Char():FindFirstChildOfClass("Humanoid")
+    if not hum then return end
+    for _,t in pairs(LP.Backpack:GetChildren()) do
+        if t:IsA("Tool") then
+            local n = t.Name:lower()
+            if n:find("combat") or n:find("leg") or n:find("electric")
+            or n:find("dragon") or n:find("godhuman") then
+                hum:EquipTool(t)
+                break
+            end
+        end
+    end
+end
+LP.CharacterAdded:Connect(function()
+    task.wait(1)
+    EquipCombat()
+end)
+
+-- Quest check
 local function HasQuest()
     local gui = LP.PlayerGui:FindFirstChild("Main")
     return gui and gui:FindFirstChild("Quest") and gui.Quest.Visible
 end
 
+-- Auto Quest
 task.spawn(function()
     while task.wait(1) do
-        if State.AutoFarm and not HasQuest() then
+        if State.AutoFarm and State.AutoQuest and not HasQuest() then
             pcall(function()
                 CommF:InvokeServer("StartQuest","BanditQuest1",1)
             end)
@@ -70,11 +82,10 @@ task.spawn(function()
     end
 end)
 
---========== TARGET ==========
+-- Target
 local function GetBoss()
     for _,v in pairs(workspace.Enemies:GetChildren()) do
-        if v:FindFirstChild("Humanoid")
-        and v.Humanoid.Health > 0
+        if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0
         and v.Name:lower():find("boss") then
             return v
         end
@@ -84,8 +95,7 @@ end
 local function GetNPC()
     local best, dist = nil, math.huge
     for _,v in pairs(workspace.Enemies:GetChildren()) do
-        if v:FindFirstChild("Humanoid")
-        and v.Humanoid.Health > 0
+        if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0
         and v:FindFirstChild("HumanoidRootPart")
         and not v.Name:lower():find("boss") then
             local d = (v.HumanoidRootPart.Position - HRP().Position).Magnitude
@@ -99,14 +109,10 @@ local function GetNPC()
 end
 
 local function GetTarget()
-    if State.BossPriority then
-        local b = GetBoss()
-        if b then return b end
-    end
-    return GetNPC()
+    return GetBoss() or GetNPC()
 end
 
---========== AIR FARM ==========
+-- Air Farm
 task.spawn(function()
     while task.wait(0.12) do
         if State.AutoFarm then
@@ -122,29 +128,28 @@ task.spawn(function()
     end
 end)
 
---========== AUTO SKILL SMART ==========
-local SkillKeys = {
+-- Auto Skill (NO M1)
+local Skills = {
     Enum.KeyCode.Z,
     Enum.KeyCode.X,
     Enum.KeyCode.C,
     Enum.KeyCode.V,
     Enum.KeyCode.F
 }
-local SkillIndex = 1
-
+local idx = 1
 task.spawn(function()
     while task.wait(0.45) do
-        if State.UseSkill then
-            local key = SkillKeys[SkillIndex]
-            SkillIndex = SkillIndex % #SkillKeys + 1
-            VirtualInput:SendKeyEvent(true, key, false, game)
+        if State.AutoSkill then
+            local k = Skills[idx]
+            idx = idx % #Skills + 1
+            VIM:SendKeyEvent(true, k, false, game)
             task.wait(0.05)
-            VirtualInput:SendKeyEvent(false, key, false, game)
+            VIM:SendKeyEvent(false, k, false, game)
         end
     end
 end)
 
---========== AIM ==========
+-- Aim
 RunService.RenderStepped:Connect(function()
     if State.Aim then
         local t = GetTarget()
@@ -155,19 +160,58 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
---========== AUTO RAID ==========
+-- AUTO DODGE SEA 1 2 3
+local DodgeCD = false
+local LastHP = 0
+task.spawn(function()
+    while task.wait(0.1) do
+        if not State.AutoDodge or not State.AutoFarm then continue end
+        local hum = Char():FindFirstChild("Humanoid")
+        if not hum then continue end
+        if LastHP == 0 then LastHP = hum.Health end
+
+        local drop = LastHP - hum.Health
+        LastHP = hum.Health
+
+        local t = GetTarget()
+        local need = false
+
+        if drop > hum.MaxHealth * 0.08 then need = true end
+        if t and t:FindFirstChild("HumanoidRootPart") then
+            if (t.HumanoidRootPart.Position - HRP().Position).Magnitude < 25 then
+                need = true
+            end
+        end
+
+        if need and not DodgeCD then
+            DodgeCD = true
+            HRP().CFrame =
+                HRP().CFrame * CFrame.new(
+                    math.random(-30,30),
+                    math.random(35,55),
+                    math.random(-20,-10)
+                )
+            task.wait(0.45)
+            DodgeCD = false
+        end
+    end
+end)
+
+-- AUTO RAID
+local RaidFruit = "Flame"
+local RaidMethod = "Fruit"
 task.spawn(function()
     while task.wait(2) do
         if State.AutoRaid then
             pcall(function()
-                CommF:InvokeServer("RaidsNpc","Select",RaidConfig.Raid)
-                CommF:InvokeServer("RaidsNpc","Start",RaidConfig.Method)
+                CommF:InvokeServer("RaidsNpc","Select",RaidFruit)
+                CommF:InvokeServer("RaidsNpc","Start",RaidMethod)
             end)
         end
     end
 end)
 
---========== AUTO AWAKEN ==========
+-- AUTO AWAKEN
 task.spawn(function()
     while task.wait(3) do
         if State.AutoAwaken then
@@ -178,33 +222,17 @@ task.spawn(function()
     end
 end)
 
---========== SOLO RAID SAFE ==========
-task.spawn(function()
-    while task.wait(0.5) do
-        if State.SoloRaid then
-            local hum = Char():FindFirstChild("Humanoid")
-            if hum and hum.Health < hum.MaxHealth * 0.4 then
-                HRP().CFrame = HRP().CFrame + Vector3.new(0,60,0)
-            end
-        end
-    end
-end)
-
---========== UI ==========
-local StartTab  = Window:CreateTab("🚀 Start")
-local FarmTab   = Window:CreateTab("⚛️ Farm")
+-- UI
+local StartTab = Window:CreateTab("🚀 Start")
+local FarmTab = Window:CreateTab("⚛️ Farm")
 local CombatTab = Window:CreateTab("⚔️ Combat")
-local RaidTab   = Window:CreateTab("🔥 Raid")
+local RaidTab = Window:CreateTab("🔥 Raid")
 
 StartTab:CreateButton({
     Name = "START ALL",
     Callback = function()
         for k in pairs(State) do State[k] = true end
-        Rayfield:Notify({
-            Title = "Titan Tivi Man Hub",
-            Content = "ALL ENABLED",
-            Duration = 3
-        })
+        Rayfield:Notify({Title="Titan Hub",Content="ALL ENABLED",Duration=3})
     end
 })
 
@@ -212,11 +240,7 @@ StartTab:CreateButton({
     Name = "🛑 STOP ALL",
     Callback = function()
         for k in pairs(State) do State[k] = false end
-        Rayfield:Notify({
-            Title = "Titan Tivi Man Hub",
-            Content = "ALL STOPPED",
-            Duration = 3
-        })
+        Rayfield:Notify({Title="Titan Hub",Content="ALL STOPPED",Duration=3})
     end
 })
 
@@ -227,15 +251,21 @@ FarmTab:CreateToggle({
 })
 
 CombatTab:CreateToggle({
-    Name = "Auto Skill (Smart)",
+    Name = "Auto Skill (No M1)",
     CurrentValue = false,
-    Callback = function(v) State.UseSkill = v end
+    Callback = function(v) State.AutoSkill = v end
 })
 
 CombatTab:CreateToggle({
     Name = "Aim Lock",
     CurrentValue = false,
     Callback = function(v) State.Aim = v end
+})
+
+CombatTab:CreateToggle({
+    Name = "Auto Dodge (Sea 1 / 2 / 3)",
+    CurrentValue = false,
+    Callback = function(v) State.AutoDodge = v end
 })
 
 RaidTab:CreateToggle({
@@ -245,17 +275,17 @@ RaidTab:CreateToggle({
 })
 
 RaidTab:CreateDropdown({
-    Name = "Chọn Raid",
-    Options = RaidList,
+    Name = "Raid Fruit",
+    Options = {"Flame","Ice","Light","Magma","Dark","Buddha","Rumble"},
     CurrentOption = "Flame",
-    Callback = function(v) RaidConfig.Raid = v end
+    Callback = function(v) RaidFruit = v end
 })
 
 RaidTab:CreateDropdown({
-    Name = "Mở Raid bằng",
+    Name = "Raid Method",
     Options = {"Fruit","Money"},
     CurrentOption = "Fruit",
-    Callback = function(v) RaidConfig.Method = v end
+    Callback = function(v) RaidMethod = v end
 })
 
 RaidTab:CreateToggle({
@@ -264,14 +294,8 @@ RaidTab:CreateToggle({
     Callback = function(v) State.AutoAwaken = v end
 })
 
-RaidTab:CreateToggle({
-    Name = "Solo Raid (An toàn)",
-    CurrentValue = false,
-    Callback = function(v) State.SoloRaid = v end
-})
-
 Rayfield:Notify({
     Title = "Titan Tivi Man Hub",
-    Content = "Loaded • FINAL FIX",
+    Content = "Loaded Successfully",
     Duration = 3
 })
