@@ -44,13 +44,12 @@ local function HRP()
     return Char():WaitForChild("HumanoidRootPart")
 end
 
--- Auto Equip Combat (võ)
+-- Auto Equip Combat
 local function EquipCombat()
     local char = LP.Character
     if not char then return end
     local hum = char:FindFirstChildOfClass("Humanoid")
     if not hum then return end
-
     for _,tool in pairs(LP.Backpack:GetChildren()) do
         if tool:IsA("Tool") then
             local n = tool.Name:lower()
@@ -63,13 +62,11 @@ local function EquipCombat()
     end
 end
 
--- Chết / respawn -> auto equip võ
 LP.CharacterAdded:Connect(function()
     task.wait(1)
     EquipCombat()
 end)
 
--- Giữ võ liên tục khi Auto Farm bật
 task.spawn(function()
     while task.wait(1) do
         if State.AutoFarm then
@@ -78,13 +75,12 @@ task.spawn(function()
     end
 end)
 
--- Quest check
+-- Quest
 local function HasQuest()
     local gui = LP.PlayerGui:FindFirstChild("Main")
     return gui and gui:FindFirstChild("Quest") and gui.Quest.Visible
 end
 
--- Auto Quest
 task.spawn(function()
     while task.wait(1) do
         if State.AutoFarm and State.AutoQuest and not HasQuest() then
@@ -125,7 +121,7 @@ local function GetTarget()
     return GetBoss() or GetNPC()
 end
 
--- Air Farm (đánh trên không)
+-- Air Farm
 task.spawn(function()
     while task.wait(0.12) do
         if State.AutoFarm then
@@ -142,13 +138,7 @@ task.spawn(function()
 end)
 
 -- Auto Skill (NO M1)
-local Skills = {
-    Enum.KeyCode.Z,
-    Enum.KeyCode.X,
-    Enum.KeyCode.C,
-    Enum.KeyCode.V,
-    Enum.KeyCode.F
-}
+local Skills = {Enum.KeyCode.Z,Enum.KeyCode.X,Enum.KeyCode.C,Enum.KeyCode.V,Enum.KeyCode.F}
 local idx = 1
 task.spawn(function()
     while task.wait(0.45) do
@@ -173,7 +163,7 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Auto Dodge Sea 1 / 2 / 3
+-- Auto Dodge Sea 1/2/3
 local DodgeCD = false
 local LastHP = 0
 task.spawn(function()
@@ -182,10 +172,8 @@ task.spawn(function()
         local hum = Char():FindFirstChild("Humanoid")
         if not hum then continue end
         if LastHP == 0 then LastHP = hum.Health end
-
         local drop = LastHP - hum.Health
         LastHP = hum.Health
-
         local t = GetTarget()
         local need = false
         if drop > hum.MaxHealth * 0.08 then need = true end
@@ -194,22 +182,20 @@ task.spawn(function()
                 need = true
             end
         end
-
         if need and not DodgeCD then
             DodgeCD = true
-            HRP().CFrame =
-                HRP().CFrame * CFrame.new(
-                    math.random(-30,30),
-                    math.random(35,55),
-                    math.random(-20,-10)
-                )
+            HRP().CFrame = HRP().CFrame * CFrame.new(
+                math.random(-30,30),
+                math.random(35,55),
+                math.random(-20,-10)
+            )
             task.wait(0.45)
             DodgeCD = false
         end
     end
 end)
 
--- Auto Raid + Awaken
+-- Auto Raid & Awaken
 local RaidFruit = "Flame"
 local RaidMethod = "Fruit"
 
@@ -234,11 +220,13 @@ task.spawn(function()
     end
 end)
 
--- UI
-local StartTab = Window:CreateTab("🚀 Start")
-local FarmTab  = Window:CreateTab("⚛️ Farm")
-local CombatTab= Window:CreateTab("⚔️ Combat")
-local RaidTab  = Window:CreateTab("🔥 Raid")
+-- UI Tabs
+local StartTab   = Window:CreateTab("🚀 Start")
+local FarmTab    = Window:CreateTab("⚛️ Farm")
+local CombatTab  = Window:CreateTab("⚔️ Combat")
+local RaidTab    = Window:CreateTab("🔥 Raid")
+local GuideTab   = Window:CreateTab("📘 Hướng dẫn")
+local TutorialTab= Window:CreateTab("📘 Tutorial")
 
 StartTab:CreateButton({
     Name = "START ALL",
@@ -262,55 +250,38 @@ FarmTab:CreateToggle({
     CurrentValue = false,
     Callback = function(v)
         State.AutoFarm = v
-        if v then
-            task.wait(0.2)
-            EquipCombat() -- 🔥 bật Auto Farm = bật võ
-        end
+        if v then task.wait(0.2) EquipCombat() end
     end
 })
 
-CombatTab:CreateToggle({
-    Name = "Auto Skill (No M1)",
-    CurrentValue = false,
-    Callback = function(v) State.AutoSkill = v end
-})
+CombatTab:CreateToggle({Name="Auto Skill (No M1)",CurrentValue=false,Callback=function(v)State.AutoSkill=v end})
+CombatTab:CreateToggle({Name="Aim Lock",CurrentValue=false,Callback=function(v)State.Aim=v end})
+CombatTab:CreateToggle({Name="Auto Dodge (Sea 1 / 2 / 3)",CurrentValue=false,Callback=function(v)State.AutoDodge=v end})
 
-CombatTab:CreateToggle({
-    Name = "Aim Lock",
-    CurrentValue = false,
-    Callback = function(v) State.Aim = v end
-})
-
-CombatTab:CreateToggle({
-    Name = "Auto Dodge (Sea 1 / 2 / 3)",
-    CurrentValue = false,
-    Callback = function(v) State.AutoDodge = v end
-})
-
-RaidTab:CreateToggle({
-    Name = "Auto Raid",
-    CurrentValue = false,
-    Callback = function(v) State.AutoRaid = v end
-})
-
+RaidTab:CreateToggle({Name="Auto Raid",CurrentValue=false,Callback=function(v)State.AutoRaid=v end})
 RaidTab:CreateDropdown({
-    Name = "Raid Fruit",
-    Options = {"Flame","Ice","Light","Magma","Dark","Buddha","Rumble"},
-    CurrentOption = "Flame",
-    Callback = function(v) RaidFruit = v end
+    Name="Raid Fruit",
+    Options={"Flame","Ice","Light","Magma","Dark","Buddha","Rumble"},
+    CurrentOption="Flame",
+    Callback=function(v) RaidFruit=v end
 })
-
 RaidTab:CreateDropdown({
-    Name = "Raid Method",
-    Options = {"Fruit","Money"},
-    CurrentOption = "Fruit",
-    Callback = function(v) RaidMethod = v end
+    Name="Raid Method",
+    Options={"Fruit","Money"},
+    CurrentOption="Fruit",
+    Callback=function(v) RaidMethod=v end
+})
+RaidTab:CreateToggle({Name="Auto Awaken",CurrentValue=false,Callback=function(v)State.AutoAwaken=v end})
+
+-- Guide / Tutorial Content
+GuideTab:CreateParagraph({
+    Title = "Hướng dẫn sử dụng",
+    Content = "PC: Nhấn phím Shift để kịch bản hoạt động.\n\nMobile: Bật Shift Lock và nhấn 2 lần để kịch bản hoạt động."
 })
 
-RaidTab:CreateToggle({
-    Name = "Auto Awaken",
-    CurrentValue = false,
-    Callback = function(v) State.AutoAwaken = v end
+TutorialTab:CreateParagraph({
+    Title = "How to Use",
+    Content = "PC: Press Shift to activate the script.\n\nMobile: Enable Shift Lock and tap it twice to activate the script."
 })
 
 Rayfield:Notify({
