@@ -8,7 +8,7 @@ local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 local Window = Rayfield:CreateWindow({
     Name = "📺 Titan Tivi Man Hub | FINAL",
     LoadingTitle = "Titan Tivi Man Hub",
-    LoadingSubtitle = "Auto Quest • Dodge • Raid",
+    LoadingSubtitle = "Auto Farm • Dodge • Raid",
     ConfigurationSaving = {
         Enabled = true,
         FolderName = "TitanTiviMan",
@@ -30,11 +30,10 @@ local State = {
     AutoFarm = false,
     AutoQuest = true,
     AutoSkill = false,
-    Aim = false,
     AutoDodge = false,
+    Aim = false,
     AutoRaid = false,
-    AutoAwaken = false,
-    StopAll = false
+    AutoAwaken = false
 }
 
 -- Utils
@@ -45,24 +44,38 @@ local function HRP()
     return Char():WaitForChild("HumanoidRootPart")
 end
 
--- Auto Equip Combat after death
+-- Auto Equip Combat (võ)
 local function EquipCombat()
-    local hum = Char():FindFirstChildOfClass("Humanoid")
+    local char = LP.Character
+    if not char then return end
+    local hum = char:FindFirstChildOfClass("Humanoid")
     if not hum then return end
-    for _,t in pairs(LP.Backpack:GetChildren()) do
-        if t:IsA("Tool") then
-            local n = t.Name:lower()
+
+    for _,tool in pairs(LP.Backpack:GetChildren()) do
+        if tool:IsA("Tool") then
+            local n = tool.Name:lower()
             if n:find("combat") or n:find("leg") or n:find("electric")
-            or n:find("dragon") or n:find("godhuman") then
-                hum:EquipTool(t)
+            or n:find("dragon") or n:find("godhuman") or n:find("karate") then
+                hum:EquipTool(tool)
                 break
             end
         end
     end
 end
+
+-- Chết / respawn -> auto equip võ
 LP.CharacterAdded:Connect(function()
     task.wait(1)
     EquipCombat()
+end)
+
+-- Giữ võ liên tục khi Auto Farm bật
+task.spawn(function()
+    while task.wait(1) do
+        if State.AutoFarm then
+            EquipCombat()
+        end
+    end
 end)
 
 -- Quest check
@@ -112,7 +125,7 @@ local function GetTarget()
     return GetBoss() or GetNPC()
 end
 
--- Air Farm
+-- Air Farm (đánh trên không)
 task.spawn(function()
     while task.wait(0.12) do
         if State.AutoFarm then
@@ -160,7 +173,7 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- AUTO DODGE SEA 1 2 3
+-- Auto Dodge Sea 1 / 2 / 3
 local DodgeCD = false
 local LastHP = 0
 task.spawn(function()
@@ -175,7 +188,6 @@ task.spawn(function()
 
         local t = GetTarget()
         local need = false
-
         if drop > hum.MaxHealth * 0.08 then need = true end
         if t and t:FindFirstChild("HumanoidRootPart") then
             if (t.HumanoidRootPart.Position - HRP().Position).Magnitude < 25 then
@@ -197,9 +209,10 @@ task.spawn(function()
     end
 end)
 
--- AUTO RAID
+-- Auto Raid + Awaken
 local RaidFruit = "Flame"
 local RaidMethod = "Fruit"
+
 task.spawn(function()
     while task.wait(2) do
         if State.AutoRaid then
@@ -211,7 +224,6 @@ task.spawn(function()
     end
 end)
 
--- AUTO AWAKEN
 task.spawn(function()
     while task.wait(3) do
         if State.AutoAwaken then
@@ -224,14 +236,15 @@ end)
 
 -- UI
 local StartTab = Window:CreateTab("🚀 Start")
-local FarmTab = Window:CreateTab("⚛️ Farm")
-local CombatTab = Window:CreateTab("⚔️ Combat")
-local RaidTab = Window:CreateTab("🔥 Raid")
+local FarmTab  = Window:CreateTab("⚛️ Farm")
+local CombatTab= Window:CreateTab("⚔️ Combat")
+local RaidTab  = Window:CreateTab("🔥 Raid")
 
 StartTab:CreateButton({
     Name = "START ALL",
     Callback = function()
         for k in pairs(State) do State[k] = true end
+        EquipCombat()
         Rayfield:Notify({Title="Titan Hub",Content="ALL ENABLED",Duration=3})
     end
 })
@@ -247,7 +260,13 @@ StartTab:CreateButton({
 FarmTab:CreateToggle({
     Name = "Auto Farm (Air)",
     CurrentValue = false,
-    Callback = function(v) State.AutoFarm = v end
+    Callback = function(v)
+        State.AutoFarm = v
+        if v then
+            task.wait(0.2)
+            EquipCombat() -- 🔥 bật Auto Farm = bật võ
+        end
+    end
 })
 
 CombatTab:CreateToggle({
