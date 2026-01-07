@@ -1,47 +1,94 @@
---================ LOAD RAYFIELD =================
+--====================================================
+-- 📺 TITAN TIVI MAN HUB | BLOX FRUITS | FINAL ALL-IN
+--====================================================
+
+--========== LOAD RAYFIELD ==========
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
 local Window = Rayfield:CreateWindow({
-    Name = "📺 Titan Tivi Man Hub | Blox Fruits",
+    Name = "📺 Titan Tivi Man Hub | FINAL",
     LoadingTitle = "Titan Tivi Man Hub",
-    LoadingSubtitle = "Rayfield MAX",
+    LoadingSubtitle = "Farm • Boss • Raid • Awaken",
     ConfigurationSaving = {
         Enabled = true,
         FolderName = "TitanTiviMan",
-        FileName = "BloxFruits"
+        FileName = "FinalAll"
     },
     KeySystem = false
 })
 
---================ SERVICES =================
+--========== SERVICES ==========
 local Players = game:GetService("Players")
+local RS = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local VirtualUser = game:GetService("VirtualUser")
 local LP = Players.LocalPlayer
+local CommF = RS:WaitForChild("Remotes"):WaitForChild("CommF_")
 
---================ STATES =================
+--========== STATE ==========
 local State = {
-    Farm = false,
+    AutoFarm = false,
+    AutoAttack = false,
+    Combo = false,
     Aim = false,
-    AutoAttack = false
+    BossPriority = true,
+    AutoRaid = false,
+    AutoAwaken = false,
+    SoloRaid = false
 }
 
---================ UTILS =================
+--========== RAID CONFIG ==========
+local RaidConfig = {
+    Method = "Fruit", -- Fruit / Money
+    Raid = "Flame"
+}
+
+local RaidList = {
+    "Flame","Ice","Light","Magma","Dark","Sand","Buddha","Quake","Rumble"
+}
+
+--========== UTILS ==========
 local function Char()
     return LP.Character or LP.CharacterAdded:Wait()
 end
-
 local function HRP()
     return Char():WaitForChild("HumanoidRootPart")
 end
 
---================ FIND NPC =================
+--========== QUEST ==========
+local function HasQuest()
+    local gui = LP.PlayerGui:FindFirstChild("Main")
+    return gui and gui:FindFirstChild("Quest") and gui.Quest.Visible
+end
+
+task.spawn(function()
+    while task.wait(1) do
+        if State.AutoFarm and not HasQuest() then
+            pcall(function()
+                CommF:InvokeServer("StartQuest","BanditQuest1",1)
+            end)
+        end
+    end
+end)
+
+--========== TARGET ==========
+local function GetBoss()
+    for _,v in pairs(workspace.Enemies:GetChildren()) do
+        if v:FindFirstChild("Humanoid")
+        and v.Humanoid.Health > 0
+        and v.Name:lower():find("boss") then
+            return v
+        end
+    end
+end
+
 local function GetNPC()
     local best, dist = nil, math.huge
     for _,v in pairs(workspace.Enemies:GetChildren()) do
         if v:FindFirstChild("Humanoid")
         and v.Humanoid.Health > 0
-        and v:FindFirstChild("HumanoidRootPart") then
+        and v:FindFirstChild("HumanoidRootPart")
+        and not v.Name:lower():find("boss") then
             local d = (v.HumanoidRootPart.Position - HRP().Position).Magnitude
             if d < dist then
                 dist = d
@@ -52,108 +99,207 @@ local function GetNPC()
     return best
 end
 
---================ AIR LOCK FARM (NO SKILL) =================
-local HEIGHT = 18
-local DIST = 6
+local function GetTarget()
+    if State.BossPriority then
+        local b = GetBoss()
+        if b then return b end
+    end
+    return GetNPC()
+end
 
+--========== AIR FARM ==========
 task.spawn(function()
     while task.wait(0.12) do
-        if State.Farm then
-            local npc = GetNPC()
-            if npc then
-                local nhrp = npc.HumanoidRootPart
-                local hrp = HRP()
-
-                -- KHÓA NHÂN VẬT TRÊN KHÔNG
-                hrp.AssemblyLinearVelocity = Vector3.zero
-                hrp.CFrame =
-                    nhrp.CFrame
-                    * CFrame.new(0, HEIGHT, DIST)
-                    * CFrame.Angles(math.rad(-90), 0, 0)
-
-                -- ÉP NPC ĐỨNG YÊN
-                nhrp.AssemblyLinearVelocity = Vector3.zero
+        if State.AutoFarm then
+            local t = GetTarget()
+            if t and t:FindFirstChild("HumanoidRootPart") then
+                HRP().AssemblyLinearVelocity = Vector3.zero
+                HRP().CFrame =
+                    t.HumanoidRootPart.CFrame
+                    * CFrame.new(0,20,6)
+                    * CFrame.Angles(math.rad(-90),0,0)
             end
         end
     end
 end)
 
---================ AUTO CLICK (M1 ONLY) =================
+--========== AUTO ATTACK (M1) ==========
 task.spawn(function()
     while task.wait(0.05) do
         if State.AutoAttack then
-            VirtualUser:Button1Down(Vector2.new(0,0))
+            VirtualUser:Button1Down(Vector2.new())
             task.wait(0.01)
-            VirtualUser:Button1Up(Vector2.new(0,0))
+            VirtualUser:Button1Up(Vector2.new())
         end
     end
 end)
 
---================ AIM (KHÔNG GIẬT) =================
+--========== COMBO ==========
+task.spawn(function()
+    while task.wait(0.3) do
+        if State.Combo and State.AutoAttack then
+            VirtualUser:Button1Down(Vector2.new())
+            task.wait(0.12)
+            VirtualUser:Button1Up(Vector2.new())
+        end
+    end
+end)
+
+--========== AIM ==========
 RunService.RenderStepped:Connect(function()
     if State.Aim then
-        local npc = GetNPC()
-        if npc and npc:FindFirstChild("Head") then
-            local cam = workspace.CurrentCamera
-            cam.CFrame = CFrame.new(cam.CFrame.Position, npc.Head.Position)
+        local t = GetTarget()
+        if t and t:FindFirstChild("Head") then
+            workspace.CurrentCamera.CFrame =
+                CFrame.new(workspace.CurrentCamera.CFrame.Position, t.Head.Position)
         end
     end
 end)
 
---================ RAYFIELD UI =================
-local StartTab = Window:CreateTab("🚀 Start", 4483362458)
-local FarmTab  = Window:CreateTab("⚛️ Auto Farm", 4483362458)
-local AimTab   = Window:CreateTab("🎯 Aim", 4483362458)
+--========== AUTO RAID ==========
+task.spawn(function()
+    while task.wait(2) do
+        if State.AutoRaid then
+            pcall(function()
+                CommF:InvokeServer("RaidsNpc","Select",RaidConfig.Raid)
+                CommF:InvokeServer("RaidsNpc","Start",RaidConfig.Method)
+            end)
+        end
+    end
+end)
+
+--========== AUTO AWAKEN ==========
+task.spawn(function()
+    while task.wait(3) do
+        if State.AutoAwaken then
+            pcall(function()
+                CommF:InvokeServer("Awakener","Awaken")
+            end)
+        end
+    end
+end)
+
+--========== SOLO RAID SAFE ==========
+task.spawn(function()
+    while task.wait(0.5) do
+        if State.SoloRaid then
+            local hum = Char():FindFirstChild("Humanoid")
+            if hum and hum.Health < hum.MaxHealth * 0.4 then
+                HRP().CFrame = HRP().CFrame + Vector3.new(0,60,0)
+            end
+        end
+    end
+end)
+
+--========== FIX LAG ==========
+local function FixLag()
+    for _,v in pairs(workspace:GetDescendants()) do
+        if v:IsA("BasePart") then
+            v.Material = Enum.Material.Plastic
+            v.Reflectance = 0
+        elseif v:IsA("ParticleEmitter")
+        or v:IsA("Trail")
+        or v:IsA("Smoke")
+        or v:IsA("Fire") then
+            v.Enabled = false
+        end
+    end
+end
+
+--========== UI ==========
+local StartTab  = Window:CreateTab("🚀 Start")
+local FarmTab   = Window:CreateTab("⚛️ Farm")
+local RaidTab   = Window:CreateTab("🔥 Raid")
+local CombatTab = Window:CreateTab("⚔️ Combat")
+local FixTab    = Window:CreateTab("🛠 Fix Lag")
 
 StartTab:CreateButton({
-    Name = "START MAX (NO SKILL)",
+    Name = "START ALL (BEST)",
     Callback = function()
-        State.Farm = true
+        State.AutoFarm = true
         State.AutoAttack = true
+        State.Combo = true
         State.Aim = true
+        State.AutoRaid = true
+        State.AutoAwaken = true
+        State.SoloRaid = true
         Rayfield:Notify({
             Title = "Titan Tivi Man Hub",
-            Content = "MAX CUỐI • Đánh M1 • Trên không",
+            Content = "ALL FEATURES ENABLED",
             Duration = 4
         })
     end
 })
 
-StartTab:CreateButton({
-    Name = "STOP ALL",
-    Callback = function()
-        State.Farm = false
-        State.AutoAttack = false
-        State.Aim = false
-    end
-})
-
 FarmTab:CreateToggle({
-    Name = "Auto Farm (Air Lock)",
+    Name = "Auto Farm (Air)",
     CurrentValue = false,
-    Callback = function(v)
-        State.Farm = v
-    end
+    Callback = function(v) State.AutoFarm = v end
 })
 
 FarmTab:CreateToggle({
+    Name = "Ưu tiên Boss",
+    CurrentValue = true,
+    Callback = function(v) State.BossPriority = v end
+})
+
+RaidTab:CreateToggle({
+    Name = "Auto Raid",
+    CurrentValue = false,
+    Callback = function(v) State.AutoRaid = v end
+})
+
+RaidTab:CreateDropdown({
+    Name = "Chọn Raid",
+    Options = RaidList,
+    CurrentOption = "Flame",
+    Callback = function(v) RaidConfig.Raid = v end
+})
+
+RaidTab:CreateDropdown({
+    Name = "Mở Raid bằng",
+    Options = {"Fruit","Money"},
+    CurrentOption = "Fruit",
+    Callback = function(v) RaidConfig.Method = v end
+})
+
+RaidTab:CreateToggle({
+    Name = "Auto Awaken",
+    CurrentValue = false,
+    Callback = function(v) State.AutoAwaken = v end
+})
+
+RaidTab:CreateToggle({
+    Name = "Solo Raid (An toàn)",
+    CurrentValue = false,
+    Callback = function(v) State.SoloRaid = v end
+})
+
+CombatTab:CreateToggle({
     Name = "Auto Attack (M1)",
     CurrentValue = false,
-    Callback = function(v)
-        State.AutoAttack = v
-    end
+    Callback = function(v) State.AutoAttack = v end
 })
 
-AimTab:CreateToggle({
-    Name = "Aimbot NPC",
+CombatTab:CreateToggle({
+    Name = "Combo M1",
     CurrentValue = false,
-    Callback = function(v)
-        State.Aim = v
-    end
+    Callback = function(v) State.Combo = v end
+})
+
+CombatTab:CreateToggle({
+    Name = "Aim Lock",
+    CurrentValue = false,
+    Callback = function(v) State.Aim = v end
+})
+
+FixTab:CreateButton({
+    Name = "Apply Fix Lag",
+    Callback = FixLag
 })
 
 Rayfield:Notify({
     Title = "Titan Tivi Man Hub",
-    Content = "Loaded | MAX CUỐI NO SKILL",
+    Content = "Loaded • FINAL ALL-IN",
     Duration = 3
 })
