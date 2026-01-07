@@ -4,7 +4,7 @@ local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 local Window = Rayfield:CreateWindow({
     Name = "📺 Titan Tivi Man Hub | Blox Fruits",
     LoadingTitle = "Titan Tivi Man Hub",
-    LoadingSubtitle = "Rayfield Edition",
+    LoadingSubtitle = "Rayfield MAX",
     ConfigurationSaving = {
         Enabled = true,
         FolderName = "TitanTiviMan",
@@ -15,16 +15,15 @@ local Window = Rayfield:CreateWindow({
 
 --================ SERVICES =================
 local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local VirtualUser = game:GetService("VirtualUser")
-
 local LP = Players.LocalPlayer
 
 --================ STATES =================
 local State = {
-    AutoFarm = false,
-    Aim = false
+    Farm = false,
+    Aim = false,
+    AutoAttack = false
 }
 
 --================ UTILS =================
@@ -36,9 +35,9 @@ local function HRP()
     return Char():WaitForChild("HumanoidRootPart")
 end
 
---================ NPC =================
+--================ FIND NPC =================
 local function GetNPC()
-    local near, dist = nil, math.huge
+    local best, dist = nil, math.huge
     for _,v in pairs(workspace.Enemies:GetChildren()) do
         if v:FindFirstChild("Humanoid")
         and v.Humanoid.Health > 0
@@ -46,72 +45,75 @@ local function GetNPC()
             local d = (v.HumanoidRootPart.Position - HRP().Position).Magnitude
             if d < dist then
                 dist = d
-                near = v
+                best = v
             end
         end
     end
-    return near
+    return best
 end
 
---================ AIR COMBAT (FIX ALL) =================
-local HEIGHT = 16
+--================ AIR LOCK FARM (NO SKILL) =================
+local HEIGHT = 18
 local DIST = 6
 
 task.spawn(function()
-    while task.wait(0.15) do
-        if State.AutoFarm then
+    while task.wait(0.12) do
+        if State.Farm then
             local npc = GetNPC()
             if npc then
                 local nhrp = npc.HumanoidRootPart
                 local hrp = HRP()
 
-                -- ÉP BAY TRÊN CAO
-                hrp.Velocity = Vector3.zero
+                -- KHÓA NHÂN VẬT TRÊN KHÔNG
+                hrp.AssemblyLinearVelocity = Vector3.zero
                 hrp.CFrame =
                     nhrp.CFrame
                     * CFrame.new(0, HEIGHT, DIST)
                     * CFrame.Angles(math.rad(-90), 0, 0)
 
                 -- ÉP NPC ĐỨNG YÊN
-                nhrp.Velocity = Vector3.zero
-
-                -- ĐÁNH LIÊN TỤC
-                VirtualUser:Button1Down(Vector2.new(0,0))
-                task.wait(0.05)
-                VirtualUser:Button1Up(Vector2.new(0,0))
+                nhrp.AssemblyLinearVelocity = Vector3.zero
             end
         end
     end
 end)
 
---================ AIM =================
-RunService.RenderStepped:Connect(function()
-    if State.Aim then
-        local npc = GetNPC()
-        if npc and npc:FindFirstChild("Head") then
-            workspace.CurrentCamera.CFrame =
-                CFrame.new(
-                    workspace.CurrentCamera.CFrame.Position,
-                    npc.Head.Position
-                )
+--================ AUTO CLICK (M1 ONLY) =================
+task.spawn(function()
+    while task.wait(0.05) do
+        if State.AutoAttack then
+            VirtualUser:Button1Down(Vector2.new(0,0))
+            task.wait(0.01)
+            VirtualUser:Button1Up(Vector2.new(0,0))
         end
     end
 end)
 
---================ RAYFIELD TABS =================
+--================ AIM (KHÔNG GIẬT) =================
+RunService.RenderStepped:Connect(function()
+    if State.Aim then
+        local npc = GetNPC()
+        if npc and npc:FindFirstChild("Head") then
+            local cam = workspace.CurrentCamera
+            cam.CFrame = CFrame.new(cam.CFrame.Position, npc.Head.Position)
+        end
+    end
+end)
+
+--================ RAYFIELD UI =================
 local StartTab = Window:CreateTab("🚀 Start", 4483362458)
 local FarmTab  = Window:CreateTab("⚛️ Auto Farm", 4483362458)
 local AimTab   = Window:CreateTab("🎯 Aim", 4483362458)
 
---================ START =================
 StartTab:CreateButton({
-    Name = "START ALL (AIR FARM)",
+    Name = "START MAX (NO SKILL)",
     Callback = function()
-        State.AutoFarm = true
+        State.Farm = true
+        State.AutoAttack = true
         State.Aim = true
         Rayfield:Notify({
             Title = "Titan Tivi Man Hub",
-            Content = "ĐÁNH 100% TRÊN KHÔNG\nKhông chạm đất",
+            Content = "MAX CUỐI • Đánh M1 • Trên không",
             Duration = 4
         })
     end
@@ -120,17 +122,25 @@ StartTab:CreateButton({
 StartTab:CreateButton({
     Name = "STOP ALL",
     Callback = function()
-        State.AutoFarm = false
+        State.Farm = false
+        State.AutoAttack = false
         State.Aim = false
     end
 })
 
---================ TOGGLES =================
 FarmTab:CreateToggle({
-    Name = "Auto Farm (Air)",
+    Name = "Auto Farm (Air Lock)",
     CurrentValue = false,
     Callback = function(v)
-        State.AutoFarm = v
+        State.Farm = v
+    end
+})
+
+FarmTab:CreateToggle({
+    Name = "Auto Attack (M1)",
+    CurrentValue = false,
+    Callback = function(v)
+        State.AutoAttack = v
     end
 })
 
@@ -144,6 +154,6 @@ AimTab:CreateToggle({
 
 Rayfield:Notify({
     Title = "Titan Tivi Man Hub",
-    Content = "Loaded | Rayfield Air Combat",
+    Content = "Loaded | MAX CUỐI NO SKILL",
     Duration = 3
 })
