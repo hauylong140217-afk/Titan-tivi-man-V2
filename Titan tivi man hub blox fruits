@@ -1,5 +1,5 @@
 --====================================================
--- 📺 TITAN TIVI MAN HUB | BLOX FRUITS | FINAL ALL-IN
+-- 📺 TITAN TIVI MAN HUB | BLOX FRUITS | SKILL MODE
 --====================================================
 
 --========== LOAD RAYFIELD ==========
@@ -8,11 +8,11 @@ local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 local Window = Rayfield:CreateWindow({
     Name = "📺 Titan Tivi Man Hub | FINAL",
     LoadingTitle = "Titan Tivi Man Hub",
-    LoadingSubtitle = "Farm • Boss • Raid • Awaken",
+    LoadingSubtitle = "Skill • Boss • Raid • Awaken",
     ConfigurationSaving = {
         Enabled = true,
         FolderName = "TitanTiviMan",
-        FileName = "FinalAll"
+        FileName = "SkillMode"
     },
     KeySystem = false
 })
@@ -21,15 +21,14 @@ local Window = Rayfield:CreateWindow({
 local Players = game:GetService("Players")
 local RS = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local VirtualUser = game:GetService("VirtualUser")
+local VirtualInput = game:GetService("VirtualInputManager")
 local LP = Players.LocalPlayer
-local CommF = RS:WaitForChild("Remotes"):WaitForChild("CommF_")
+local CommF = RS.Remotes.CommF_
 
 --========== STATE ==========
 local State = {
     AutoFarm = false,
-    AutoAttack = false,
-    Combo = false,
+    UseSkill = false,
     Aim = false,
     BossPriority = true,
     AutoRaid = false,
@@ -39,7 +38,7 @@ local State = {
 
 --========== RAID CONFIG ==========
 local RaidConfig = {
-    Method = "Fruit", -- Fruit / Money
+    Method = "Fruit",
     Raid = "Flame"
 }
 
@@ -54,22 +53,6 @@ end
 local function HRP()
     return Char():WaitForChild("HumanoidRootPart")
 end
-
---========== QUEST ==========
-local function HasQuest()
-    local gui = LP.PlayerGui:FindFirstChild("Main")
-    return gui and gui:FindFirstChild("Quest") and gui.Quest.Visible
-end
-
-task.spawn(function()
-    while task.wait(1) do
-        if State.AutoFarm and not HasQuest() then
-            pcall(function()
-                CommF:InvokeServer("StartQuest","BanditQuest1",1)
-            end)
-        end
-    end
-end)
 
 --========== TARGET ==========
 local function GetBoss()
@@ -116,31 +99,31 @@ task.spawn(function()
                 HRP().AssemblyLinearVelocity = Vector3.zero
                 HRP().CFrame =
                     t.HumanoidRootPart.CFrame
-                    * CFrame.new(0,20,6)
+                    * CFrame.new(0,25,6)
                     * CFrame.Angles(math.rad(-90),0,0)
             end
         end
     end
 end)
 
---========== AUTO ATTACK (M1) ==========
-task.spawn(function()
-    while task.wait(0.05) do
-        if State.AutoAttack then
-            VirtualUser:Button1Down(Vector2.new())
-            task.wait(0.01)
-            VirtualUser:Button1Up(Vector2.new())
-        end
-    end
-end)
+--========== AUTO SKILL ==========
+local SkillKeys = {
+    Enum.KeyCode.Z,
+    Enum.KeyCode.X,
+    Enum.KeyCode.C,
+    Enum.KeyCode.V,
+    Enum.KeyCode.F
+}
 
---========== COMBO ==========
 task.spawn(function()
-    while task.wait(0.3) do
-        if State.Combo and State.AutoAttack then
-            VirtualUser:Button1Down(Vector2.new())
-            task.wait(0.12)
-            VirtualUser:Button1Up(Vector2.new())
+    while task.wait(0.6) do
+        if State.UseSkill then
+            for _,key in ipairs(SkillKeys) do
+                VirtualInput:SendKeyEvent(true, key, false, game)
+                task.wait(0.05)
+                VirtualInput:SendKeyEvent(false, key, false, game)
+                task.wait(0.15)
+            end
         end
     end
 end)
@@ -191,41 +174,24 @@ task.spawn(function()
     end
 end)
 
---========== FIX LAG ==========
-local function FixLag()
-    for _,v in pairs(workspace:GetDescendants()) do
-        if v:IsA("BasePart") then
-            v.Material = Enum.Material.Plastic
-            v.Reflectance = 0
-        elseif v:IsA("ParticleEmitter")
-        or v:IsA("Trail")
-        or v:IsA("Smoke")
-        or v:IsA("Fire") then
-            v.Enabled = false
-        end
-    end
-end
-
 --========== UI ==========
 local StartTab  = Window:CreateTab("🚀 Start")
 local FarmTab   = Window:CreateTab("⚛️ Farm")
 local RaidTab   = Window:CreateTab("🔥 Raid")
 local CombatTab = Window:CreateTab("⚔️ Combat")
-local FixTab    = Window:CreateTab("🛠 Fix Lag")
 
 StartTab:CreateButton({
-    Name = "START ALL (BEST)",
+    Name = "START ALL (SKILL MODE)",
     Callback = function()
         State.AutoFarm = true
-        State.AutoAttack = true
-        State.Combo = true
+        State.UseSkill = true
         State.Aim = true
         State.AutoRaid = true
         State.AutoAwaken = true
         State.SoloRaid = true
         Rayfield:Notify({
             Title = "Titan Tivi Man Hub",
-            Content = "ALL FEATURES ENABLED",
+            Content = "Skill mode enabled",
             Duration = 4
         })
     end
@@ -241,6 +207,18 @@ FarmTab:CreateToggle({
     Name = "Ưu tiên Boss",
     CurrentValue = true,
     Callback = function(v) State.BossPriority = v end
+})
+
+CombatTab:CreateToggle({
+    Name = "Auto Skill (Z X C V F)",
+    CurrentValue = false,
+    Callback = function(v) State.UseSkill = v end
+})
+
+CombatTab:CreateToggle({
+    Name = "Aim Lock",
+    CurrentValue = false,
+    Callback = function(v) State.Aim = v end
 })
 
 RaidTab:CreateToggle({
@@ -275,31 +253,8 @@ RaidTab:CreateToggle({
     Callback = function(v) State.SoloRaid = v end
 })
 
-CombatTab:CreateToggle({
-    Name = "Auto Attack (M1)",
-    CurrentValue = false,
-    Callback = function(v) State.AutoAttack = v end
-})
-
-CombatTab:CreateToggle({
-    Name = "Combo M1",
-    CurrentValue = false,
-    Callback = function(v) State.Combo = v end
-})
-
-CombatTab:CreateToggle({
-    Name = "Aim Lock",
-    CurrentValue = false,
-    Callback = function(v) State.Aim = v end
-})
-
-FixTab:CreateButton({
-    Name = "Apply Fix Lag",
-    Callback = FixLag
-})
-
 Rayfield:Notify({
     Title = "Titan Tivi Man Hub",
-    Content = "Loaded • FINAL ALL-IN",
+    Content = "Loaded • Skill Mode Ready",
     Duration = 3
 })
