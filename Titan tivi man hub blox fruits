@@ -1,18 +1,18 @@
 --====================================================
--- 📺 TITAN TIVI MAN HUB | BLOX FRUITS | SKILL MODE
+-- 📺 TITAN TIVI MAN HUB | BLOX FRUITS | FINAL FIX
 --====================================================
 
 --========== LOAD RAYFIELD ==========
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
 local Window = Rayfield:CreateWindow({
-    Name = "📺 Titan Tivi Man Hub | FINAL",
+    Name = "📺 Titan Tivi Man Hub | FINAL FIX",
     LoadingTitle = "Titan Tivi Man Hub",
-    LoadingSubtitle = "Skill • Boss • Raid • Awaken",
+    LoadingSubtitle = "Quest • Skill • Boss • Raid",
     ConfigurationSaving = {
         Enabled = true,
         FolderName = "TitanTiviMan",
-        FileName = "SkillMode"
+        FileName = "FinalFix"
     },
     KeySystem = false
 })
@@ -53,6 +53,22 @@ end
 local function HRP()
     return Char():WaitForChild("HumanoidRootPart")
 end
+
+--========== QUEST FIX ==========
+local function HasQuest()
+    local gui = LP.PlayerGui:FindFirstChild("Main")
+    return gui and gui:FindFirstChild("Quest") and gui.Quest.Visible
+end
+
+task.spawn(function()
+    while task.wait(1) do
+        if State.AutoFarm and not HasQuest() then
+            pcall(function()
+                CommF:InvokeServer("StartQuest","BanditQuest1",1)
+            end)
+        end
+    end
+end)
 
 --========== TARGET ==========
 local function GetBoss()
@@ -106,7 +122,7 @@ task.spawn(function()
     end
 end)
 
---========== AUTO SKILL ==========
+--========== AUTO SKILL SMART ==========
 local SkillKeys = {
     Enum.KeyCode.Z,
     Enum.KeyCode.X,
@@ -114,16 +130,16 @@ local SkillKeys = {
     Enum.KeyCode.V,
     Enum.KeyCode.F
 }
+local SkillIndex = 1
 
 task.spawn(function()
-    while task.wait(0.6) do
+    while task.wait(0.45) do
         if State.UseSkill then
-            for _,key in ipairs(SkillKeys) do
-                VirtualInput:SendKeyEvent(true, key, false, game)
-                task.wait(0.05)
-                VirtualInput:SendKeyEvent(false, key, false, game)
-                task.wait(0.15)
-            end
+            local key = SkillKeys[SkillIndex]
+            SkillIndex = SkillIndex % #SkillKeys + 1
+            VirtualInput:SendKeyEvent(true, key, false, game)
+            task.wait(0.05)
+            VirtualInput:SendKeyEvent(false, key, false, game)
         end
     end
 end)
@@ -177,22 +193,29 @@ end)
 --========== UI ==========
 local StartTab  = Window:CreateTab("🚀 Start")
 local FarmTab   = Window:CreateTab("⚛️ Farm")
-local RaidTab   = Window:CreateTab("🔥 Raid")
 local CombatTab = Window:CreateTab("⚔️ Combat")
+local RaidTab   = Window:CreateTab("🔥 Raid")
 
 StartTab:CreateButton({
-    Name = "START ALL (SKILL MODE)",
+    Name = "START ALL",
     Callback = function()
-        State.AutoFarm = true
-        State.UseSkill = true
-        State.Aim = true
-        State.AutoRaid = true
-        State.AutoAwaken = true
-        State.SoloRaid = true
+        for k in pairs(State) do State[k] = true end
         Rayfield:Notify({
             Title = "Titan Tivi Man Hub",
-            Content = "Skill mode enabled",
-            Duration = 4
+            Content = "ALL ENABLED",
+            Duration = 3
+        })
+    end
+})
+
+StartTab:CreateButton({
+    Name = "🛑 STOP ALL",
+    Callback = function()
+        for k in pairs(State) do State[k] = false end
+        Rayfield:Notify({
+            Title = "Titan Tivi Man Hub",
+            Content = "ALL STOPPED",
+            Duration = 3
         })
     end
 })
@@ -203,14 +226,8 @@ FarmTab:CreateToggle({
     Callback = function(v) State.AutoFarm = v end
 })
 
-FarmTab:CreateToggle({
-    Name = "Ưu tiên Boss",
-    CurrentValue = true,
-    Callback = function(v) State.BossPriority = v end
-})
-
 CombatTab:CreateToggle({
-    Name = "Auto Skill (Z X C V F)",
+    Name = "Auto Skill (Smart)",
     CurrentValue = false,
     Callback = function(v) State.UseSkill = v end
 })
@@ -255,6 +272,6 @@ RaidTab:CreateToggle({
 
 Rayfield:Notify({
     Title = "Titan Tivi Man Hub",
-    Content = "Loaded • Skill Mode Ready",
+    Content = "Loaded • FINAL FIX",
     Duration = 3
 })
