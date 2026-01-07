@@ -1,0 +1,319 @@
+--// TITAN TIVI MAN | DEAD RAILS (ALL + AUTO BOND)
+--// Rayfield UI | No Key | No Tutorial
+
+local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+
+local Window = Rayfield:CreateWindow({
+    Name = "📺 Titan Tivi Man | Dead Rails",
+    LoadingTitle = "Titan Tivi Man",
+    LoadingSubtitle = "ALL + Auto Bond",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "TitanTiviMan",
+        FileName = "DeadRails_All"
+    },
+    KeySystem = false
+})
+
+-- SERVICES
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local LocalPlayer = Players.LocalPlayer
+
+local function Char()
+    return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+end
+
+------------------------------------------------
+-- ESP
+------------------------------------------------
+local EspTab = Window:CreateTab("👁 ESP", 4483362458)
+local ESP_Player, ESP_NPC, ESP_Object = false, false, false
+
+local function ClearESP()
+    for _,v in pairs(Workspace:GetDescendants()) do
+        if v:IsA("BillboardGui") and v.Name == "TitanESP" then
+            v:Destroy()
+        end
+    end
+end
+
+local function MakeESP(part, text, color)
+    if part:FindFirstChild("TitanESP") then return end
+    local gui = Instance.new("BillboardGui", part)
+    gui.Name = "TitanESP"
+    gui.Size = UDim2.new(0,200,0,40)
+    gui.AlwaysOnTop = true
+    gui.Adornee = part
+
+    local lbl = Instance.new("TextLabel", gui)
+    lbl.Size = UDim2.new(1,0,1,0)
+    lbl.BackgroundTransparency = 1
+    lbl.TextScaled = true
+    lbl.Font = Enum.Font.SourceSansBold
+    lbl.TextColor3 = color
+    lbl.Text = text
+end
+
+EspTab:CreateToggle({
+    Name = "ESP Player + Distance",
+    CurrentValue = false,
+    Callback = function(v)
+        ESP_Player = v
+        if not v then ClearESP() end
+    end
+})
+
+EspTab:CreateToggle({
+    Name = "ESP NPC / Enemy",
+    CurrentValue = false,
+    Callback = function(v)
+        ESP_NPC = v
+        if not v then ClearESP() end
+    end
+})
+
+EspTab:CreateToggle({
+    Name = "ESP Bond / Object",
+    CurrentValue = false,
+    Callback = function(v)
+        ESP_Object = v
+        if not v then ClearESP() end
+    end
+})
+
+RunService.RenderStepped:Connect(function()
+    local hrp = Char():FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    for _,obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj:FindFirstChild("HumanoidRootPart") then
+            local dist = math.floor((hrp.Position - obj.HumanoidRootPart.Position).Magnitude)
+
+            if ESP_Player and Players:GetPlayerFromCharacter(obj) and obj ~= Char() then
+                MakeESP(obj.HumanoidRootPart, obj.Name.." ["..dist.."m]", Color3.fromRGB(0,255,255))
+            end
+
+            if ESP_NPC and not Players:GetPlayerFromCharacter(obj) then
+                MakeESP(obj.HumanoidRootPart, "NPC ["..dist.."m]", Color3.fromRGB(255,0,0))
+            end
+        end
+
+        if ESP_Object and obj:IsA("ProximityPrompt") and obj.Parent:IsA("BasePart") then
+            local dist = math.floor((hrp.Position - obj.Parent.Position).Magnitude)
+            MakeESP(obj.Parent, "BOND ["..dist.."m]", Color3.fromRGB(0,255,0))
+        end
+    end
+end)
+
+------------------------------------------------
+-- MOVEMENT
+------------------------------------------------
+local MoveTab = Window:CreateTab("🚀 Movement", 4483362458)
+
+MoveTab:CreateSlider({
+    Name = "Speed",
+    Range = {16,150},
+    CurrentValue = 16,
+    Callback = function(v)
+        Char().Humanoid.WalkSpeed = v
+    end
+})
+
+MoveTab:CreateSlider({
+    Name = "Jump",
+    Range = {50,200},
+    CurrentValue = 50,
+    Callback = function(v)
+        Char().Humanoid.JumpPower = v
+    end
+})
+
+local Fly = false
+MoveTab:CreateToggle({
+    Name = "Fly",
+    CurrentValue = false,
+    Callback = function(v)
+        Fly = v
+        task.spawn(function()
+            local hrp = Char().HumanoidRootPart
+            local bv = Instance.new("BodyVelocity", hrp)
+            bv.MaxForce = Vector3.new(9e9,9e9,9e9)
+            while Fly do
+                bv.Velocity = Workspace.CurrentCamera.CFrame.LookVector * 70
+                task.wait()
+            end
+            bv:Destroy()
+        end)
+    end
+})
+
+MoveTab:CreateToggle({
+    Name = "Noclip",
+    CurrentValue = false,
+    Callback = function(v)
+        RunService.Stepped:Connect(function()
+            if v then
+                for _,p in pairs(Char():GetDescendants()) do
+                    if p:IsA("BasePart") then
+                        p.CanCollide = false
+                    end
+                end
+            end
+        end)
+    end
+})
+
+------------------------------------------------
+-- AUTO
+------------------------------------------------
+local AutoTab = Window:CreateTab("🔁 Auto", 4483362458)
+local AutoBond = false
+
+AutoTab:CreateToggle({
+    Name = "Auto Bond (Spam E)",
+    CurrentValue = false,
+    Callback = function(v)
+        AutoBond = v
+        task.spawn(function()
+            while AutoBond do
+                for _,p in pairs(Workspace:GetDescendants()) do
+                    if p:IsA("ProximityPrompt") then
+                        fireproximityprompt(p)
+                    end
+                end
+                task.wait(0.25)
+            end
+        end)
+    end
+})
+
+------------------------------------------------
+-- NPC
+------------------------------------------------
+local NPCTab = Window:CreateTab("🧊 NPC", 4483362458)
+
+NPCTab:CreateButton({
+    Name = "Freeze NPC (Client)",
+    Callback = function()
+        for _,h in pairs(Workspace:GetDescendants()) do
+            if h:IsA("Humanoid") and h.Parent ~= Char() then
+                h.WalkSpeed = 0
+                h.JumpPower = 0
+            end
+        end
+    end
+})
+
+------------------------------------------------
+-- TITAN TV
+------------------------------------------------
+local TitanTab = Window:CreateTab("📺 Titan Tivi", 4483362458)
+
+TitanTab:CreateButton({
+    Name = "Titan Tivi Mode",
+    Callback = function()
+        local head = Char():FindFirstChild("Head")
+        if head then
+            local gui = Instance.new("BillboardGui", head)
+            gui.Size = UDim2.new(4,0,2,0)
+            gui.AlwaysOnTop = true
+
+            local txt = Instance.new("TextLabel", gui)
+            txt.Size = UDim2.new(1,0,1,0)
+            txt.BackgroundColor3 = Color3.new(0,0,0)
+            txt.TextColor3 = Color3.fromRGB(0,255,255)
+            txt.TextScaled = true
+            txt.Text = "📺 TITAN TIVI MAN 📺"
+        end
+    end
+})
+
+------------------------------------------------
+-- MISC
+------------------------------------------------
+local MiscTab = Window:CreateTab("⚙ Misc", 4483362458)
+
+MiscTab:CreateButton({
+    Name = "Anti AFK",
+    Callback = function()
+        local vu = game:GetService("VirtualUser")
+        LocalPlayer.Idled:Connect(function()
+            vu:Button2Down(Vector2.new(0,0),Workspace.CurrentCamera.CFrame)
+            task.wait(1)
+            vu:Button2Up(Vector2.new(0,0),Workspace.CurrentCamera.CFrame)
+        end)
+    end
+})
+
+MiscTab:CreateButton({
+    Name = "Rejoin",
+    Callback = function()
+        game:GetService("TeleportService"):Teleport(game.PlaceId, LocalPlayer)
+    end
+})
+
+------------------------------------------------
+-- AUTO ALL
+------------------------------------------------
+local AutoAllTab = Window:CreateTab("🔥 AUTO ALL", 4483362458)
+
+local AutoAll = false
+
+AutoAllTab:CreateToggle({
+    Name = "AUTO ALL (ON/OFF)",
+    CurrentValue = false,
+    Callback = function(v)
+        AutoAll = v
+
+        -- AUTO LOOP
+        task.spawn(function()
+            while AutoAll do
+                -- Auto Bond / Interact
+                for _,obj in pairs(workspace:GetDescendants()) do
+                    if obj:IsA("ProximityPrompt") then
+                        pcall(function()
+                            fireproximityprompt(obj)
+                        end)
+                    end
+                end
+
+                -- Auto Freeze NPC
+                for _,h in pairs(workspace:GetDescendants()) do
+                    if h:IsA("Humanoid")
+                    and h.Parent ~= Char() then
+                        h.WalkSpeed = 0
+                        h.JumpPower = 0
+                    end
+                end
+
+                -- Auto Collect (move item gần người)
+                local hrp = Char():FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    for _,p in pairs(workspace:GetDescendants()) do
+                        if p:IsA("BasePart")
+                        and p.Name:lower():find("item") then
+                            p.CFrame = hrp.CFrame * CFrame.new(0,0,-3)
+                        end
+                    end
+                end
+
+                task.wait(0.25)
+            end
+        end)
+    end
+})
+
+AutoAllTab:CreateButton({
+    Name = "AUTO ALL (ONCE)",
+    Callback = function()
+        for _,obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("ProximityPrompt") then
+                pcall(function()
+                    fireproximityprompt(obj)
+                end)
+            end
+        end
+    end
+})
