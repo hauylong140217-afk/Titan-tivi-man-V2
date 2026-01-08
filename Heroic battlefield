@@ -1,0 +1,254 @@
+--// Titan Tivi Man Hub | Chiến Trường Anh Hùng
+--// Full Script | No Key | Rayfield UI
+
+local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+
+local Window = Rayfield:CreateWindow({
+    Name = "📺 Titan Tivi Man Hub",
+    LoadingTitle = "Titan Tivi Man",
+    LoadingSubtitle = "Chiến Trường Anh Hùng",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "TitanTiviMan",
+        FileName = "HeroBattlefield"
+    },
+    KeySystem = false
+})
+
+-- SERVICES
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local Mouse = LocalPlayer:GetMouse()
+
+-- VARIABLES
+local Speed = 16
+local Jump = 50
+local Noclip = false
+
+--================ TAB MAIN =================--
+local MainTab = Window:CreateTab("⚔ Main", 4483362458)
+
+MainTab:CreateSlider({
+    Name = "Speed",
+    Range = {16, 200},
+    Increment = 1,
+    CurrentValue = 16,
+    Callback = function(v)
+        Speed = v
+        if LocalPlayer.Character then
+            LocalPlayer.Character.Humanoid.WalkSpeed = v
+        end
+    end
+})
+
+MainTab:CreateSlider({
+    Name = "Jump Power",
+    Range = {50, 300},
+    Increment = 5,
+    CurrentValue = 50,
+    Callback = function(v)
+        Jump = v
+        if LocalPlayer.Character then
+            LocalPlayer.Character.Humanoid.JumpPower = v
+        end
+    end
+})
+
+MainTab:CreateToggle({
+    Name = "GodMode (Basic)",
+    CurrentValue = false,
+    Callback = function(v)
+        local char = LocalPlayer.Character
+        if char and char:FindFirstChild("Humanoid") then
+            if v then
+                char.Humanoid.MaxHealth = math.huge
+                char.Humanoid.Health = math.huge
+            else
+                char.Humanoid.MaxHealth = 100
+            end
+        end
+    end
+})
+
+--================ AIM PRO =================--
+local AimTab = Window:CreateTab("🎯 AIM PRO", 4483362458)
+
+local AimEnabled = false
+local AimMode = "ALL" -- ALL / SELECT
+local SelectedPlayer = nil
+local AimPart = "Head"
+local FOV = 600
+local Smooth = 0.05
+
+local function GetPlayerNames()
+    local t = {}
+    for _,p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then
+            table.insert(t, p.Name)
+        end
+    end
+    return t
+end
+
+local function GetTarget()
+    local closest, dist = nil, FOV
+    for _,p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer
+        and p.Character
+        and p.Character:FindFirstChild(AimPart) then
+
+            if AimMode == "SELECT" and SelectedPlayer and p.Name ~= SelectedPlayer then
+                continue
+            end
+
+            local pos, onScreen = Camera:WorldToViewportPoint(p.Character[AimPart].Position)
+            if onScreen then
+                local mag = (Vector2.new(pos.X, pos.Y) - Vector2.new(Mouse.X, Mouse.Y)).Magnitude
+                if mag < dist then
+                    dist = mag
+                    closest = p
+                end
+            end
+        end
+    end
+    return closest
+end
+
+RunService.RenderStepped:Connect(function()
+    if AimEnabled then
+        local t = GetTarget()
+        if t and t.Character and t.Character:FindFirstChild(AimPart) then
+            Camera.CFrame = Camera.CFrame:Lerp(
+                CFrame.new(Camera.CFrame.Position, t.Character[AimPart].Position),
+                Smooth
+            )
+        end
+    end
+end)
+
+AimTab:CreateToggle({
+    Name = "Enable Aim",
+    CurrentValue = false,
+    Callback = function(v)
+        AimEnabled = v
+    end
+})
+
+AimTab:CreateDropdown({
+    Name = "Aim Mode",
+    Options = {"ALL","SELECT"},
+    CurrentOption = "ALL",
+    Callback = function(v)
+        AimMode = v
+    end
+})
+
+AimTab:CreateDropdown({
+    Name = "Select Player",
+    Options = GetPlayerNames(),
+    Callback = function(v)
+        SelectedPlayer = v
+    end
+})
+
+AimTab:CreateDropdown({
+    Name = "Aim Part",
+    Options = {"Head","HumanoidRootPart"},
+    CurrentOption = "Head",
+    Callback = function(v)
+        AimPart = v
+    end
+})
+
+AimTab:CreateSlider({
+    Name = "FOV",
+    Range = {100,1000},
+    Increment = 10,
+    CurrentValue = 600,
+    Callback = function(v)
+        FOV = v
+    end
+})
+
+AimTab:CreateSlider({
+    Name = "Smooth (thấp = gắt)",
+    Range = {0.01,0.3},
+    Increment = 0.01,
+    CurrentValue = 0.05,
+    Callback = function(v)
+        Smooth = v
+    end
+})
+
+--================ ESP =================--
+local ESPTab = Window:CreateTab("👁 ESP", 4483362458)
+
+ESPTab:CreateToggle({
+    Name = "ESP Player (Name)",
+    CurrentValue = false,
+    Callback = function(v)
+        for _,p in pairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
+                if v then
+                    if not p.Character.Head:FindFirstChild("ESP") then
+                        local bill = Instance.new("BillboardGui", p.Character.Head)
+                        bill.Name = "ESP"
+                        bill.Size = UDim2.new(0,200,0,40)
+                        bill.AlwaysOnTop = true
+                        local txt = Instance.new("TextLabel", bill)
+                        txt.Size = UDim2.new(1,0,1,0)
+                        txt.BackgroundTransparency = 1
+                        txt.TextColor3 = Color3.fromRGB(255,0,0)
+                        txt.TextScaled = true
+                        txt.Text = p.Name
+                    end
+                else
+                    if p.Character.Head:FindFirstChild("ESP") then
+                        p.Character.Head.ESP:Destroy()
+                    end
+                end
+            end
+        end
+    end
+})
+
+--================ MISC =================--
+local MiscTab = Window:CreateTab("🧩 Misc", 4483362458)
+
+MiscTab:CreateToggle({
+    Name = "NoClip",
+    CurrentValue = false,
+    Callback = function(v)
+        Noclip = v
+        task.spawn(function()
+            while Noclip do
+                task.wait()
+                if LocalPlayer.Character then
+                    for _,bp in pairs(LocalPlayer.Character:GetDescendants()) do
+                        if bp:IsA("BasePart") then
+                            bp.CanCollide = false
+                        end
+                    end
+                end
+            end
+        end)
+    end
+})
+
+MiscTab:CreateButton({
+    Name = "Reset Character",
+    Callback = function()
+        if LocalPlayer.Character then
+            LocalPlayer.Character.Humanoid.Health = 0
+        end
+    end
+})
+
+-- AUTO APPLY
+LocalPlayer.CharacterAdded:Connect(function(char)
+    task.wait(1)
+    char.Humanoid.WalkSpeed = Speed
+    char.Humanoid.JumpPower = Jump
+end)
