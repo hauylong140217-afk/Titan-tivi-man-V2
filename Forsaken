@@ -1,0 +1,173 @@
+--// titan tivi man | Forsaken
+--// ALL CẤP CUỐI
+--// by kencute24 | NO KEY
+
+local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+
+local Window = Rayfield:CreateWindow({
+    Name = "titan tivi man | Forsaken",
+    LoadingTitle = "titan tivi man",
+    LoadingSubtitle = "by kencute24",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "kencute24",
+        FileName = "Forsaken_ULTIMATE"
+    },
+    Discord = {Enabled = false},
+    KeySystem = false
+})
+
+-- SERVICES
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+local Lighting = game:GetService("Lighting")
+local TeleportService = game:GetService("TeleportService")
+local LP = Players.LocalPlayer
+
+--------------------------------------------------
+-- VAR
+--------------------------------------------------
+local WS, JP = 16, 50
+local InfJump, Noclip, Fly = false, false, false
+local FlySpeed = 5
+local ESP_P, ESP_N, ESP_Name, ESP_Dis = false, false, false, false
+local AntiRagdoll, AutoAvoid = false, false
+
+--------------------------------------------------
+-- 👤 PLAYER
+--------------------------------------------------
+local PlayerTab = Window:CreateTab("👤 Player", 4483362458)
+
+PlayerTab:CreateSlider({Name="WalkSpeed",Range={16,350},Increment=1,CurrentValue=16,Callback=function(v)WS=v end})
+PlayerTab:CreateSlider({Name="JumpPower",Range={50,500},Increment=5,CurrentValue=50,Callback=function(v)JP=v end})
+PlayerTab:CreateToggle({Name="Infinite Jump",CurrentValue=false,Callback=function(v)InfJump=v end})
+PlayerTab:CreateToggle({Name="Noclip",CurrentValue=false,Callback=function(v)Noclip=v end})
+
+--------------------------------------------------
+-- 🚀 FLY
+--------------------------------------------------
+local FlyTab = Window:CreateTab("🚀 Fly", 4483362458)
+
+FlyTab:CreateToggle({Name="Fly",CurrentValue=false,Callback=function(v)Fly=v end})
+FlyTab:CreateSlider({Name="Fly Speed",Range={1,20},Increment=1,CurrentValue=5,Callback=function(v)FlySpeed=v end})
+
+--------------------------------------------------
+-- 👁 ESP
+--------------------------------------------------
+local ESPTab = Window:CreateTab("👁 ESP", 4483362458)
+
+ESPTab:CreateToggle({Name="ESP Player",CurrentValue=false,Callback=function(v)ESP_P=v end})
+ESPTab:CreateToggle({Name="ESP NPC / Killer",CurrentValue=false,Callback=function(v)ESP_N=v end})
+ESPTab:CreateToggle({Name="ESP Name",CurrentValue=false,Callback=function(v)ESP_Name=v end})
+ESPTab:CreateToggle({Name="ESP Distance",CurrentValue=false,Callback=function(v)ESP_Dis=v end})
+
+--------------------------------------------------
+-- 🛡 ANTI / AUTO
+--------------------------------------------------
+local AntiTab = Window:CreateTab("🛡 Anti / Auto", 4483362458)
+
+AntiTab:CreateToggle({Name="Anti Ragdoll",CurrentValue=false,Callback=function(v)AntiRagdoll=v end})
+AntiTab:CreateToggle({Name="Auto Avoid NPC (Safe)",CurrentValue=false,Callback=function(v)AutoAvoid=v end})
+
+--------------------------------------------------
+-- 🌈 VISUAL
+--------------------------------------------------
+local VisualTab = Window:CreateTab("🌈 Visual", 4483362458)
+
+VisualTab:CreateButton({
+    Name="Full Bright",
+    Callback=function()
+        Lighting.Brightness=6
+        Lighting.ClockTime=14
+        Lighting.FogEnd=9e9
+    end
+})
+
+--------------------------------------------------
+-- ⚙ MISC
+--------------------------------------------------
+local MiscTab = Window:CreateTab("⚙ Misc", 4483362458)
+
+MiscTab:CreateButton({Name="Rejoin",Callback=function()TeleportService:Teleport(game.PlaceId,LP)end})
+MiscTab:CreateButton({Name="Reset Character",Callback=function()LP.Character:BreakJoints()end})
+
+--------------------------------------------------
+-- MAIN LOOP
+--------------------------------------------------
+RunService.RenderStepped:Connect(function()
+    pcall(function()
+        local c = LP.Character
+        local h = c and c:FindFirstChildOfClass("Humanoid")
+        local hrp = c and c:FindFirstChild("HumanoidRootPart")
+
+        if h then
+            h.WalkSpeed = WS
+            h.JumpPower = JP
+            if AntiRagdoll then
+                h:SetStateEnabled(Enum.HumanoidStateType.Ragdoll,false)
+            end
+        end
+
+        if Noclip and c then
+            for _,v in pairs(c:GetDescendants()) do
+                if v:IsA("BasePart") then v.CanCollide=false end
+            end
+        end
+
+        if Fly and hrp then
+            hrp.Velocity = Vector3.new(
+                (UIS:IsKeyDown(Enum.KeyCode.D) and FlySpeed or 0) - (UIS:IsKeyDown(Enum.KeyCode.A) and FlySpeed or 0),
+                (UIS:IsKeyDown(Enum.KeyCode.Space) and FlySpeed or 0),
+                (UIS:IsKeyDown(Enum.KeyCode.S) and FlySpeed or 0) - (UIS:IsKeyDown(Enum.KeyCode.W) and FlySpeed or 0)
+            )
+        end
+
+        if AutoAvoid and hrp then
+            for _,m in pairs(workspace:GetChildren()) do
+                if m:IsA("Model") and not Players:GetPlayerFromCharacter(m) and m:FindFirstChild("HumanoidRootPart") then
+                    if (m.HumanoidRootPart.Position - hrp.Position).Magnitude < 20 then
+                        hrp.CFrame = hrp.CFrame * CFrame.new(0,0,-30)
+                    end
+                end
+            end
+        end
+    end)
+end)
+
+UIS.JumpRequest:Connect(function()
+    if InfJump then
+        local h = LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
+        if h then h:ChangeState("Jumping") end
+    end
+end)
+
+--------------------------------------------------
+-- ESP LOOP
+--------------------------------------------------
+RunService.RenderStepped:Connect(function()
+    for _,m in pairs(workspace:GetChildren()) do
+        if m:IsA("Model") and m:FindFirstChild("HumanoidRootPart") then
+            local isPlr = Players:GetPlayerFromCharacter(m)
+            if (ESP_P and isPlr) or (ESP_N and not isPlr) then
+                if not m:FindFirstChild("titantivimanESP") then
+                    local box = Instance.new("BoxHandleAdornment")
+                    box.Name="titantivimanESP"
+                    box.Adornee=m.HumanoidRootPart
+                    box.Size=Vector3.new(4,6,4)
+                    box.Transparency=0.45
+                    box.Color3=isPlr and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
+                    box.AlwaysOnTop=true
+                    box.Parent=m
+                end
+            end
+        end
+    end
+end)
+
+--------------------------------------------------
+Rayfield:Notify({
+    Title="titan tivi man",
+    Content="ALL CẤP CUỐI LOADED | by kencute24",
+    Duration=7
+})
