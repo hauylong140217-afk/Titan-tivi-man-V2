@@ -1,243 +1,169 @@
 --==================================================================================================
--- TITAN TIVI MAN | SIGMA SAFE TEMPLATE
--- Script by kencute24
--- SAFE MODE • NO FLY • NO TELEPORT • NO AUTO-KILL
+-- TITAN TIVI MAN HUB
+-- SCRIPT BY KENCUTE24
 --==================================================================================================
 
--- SERVICES
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local Lighting = game:GetService("Lighting")
 local LocalPlayer = Players.LocalPlayer
 
--- RAYFIELD
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+
 local Window = Rayfield:CreateWindow({
-    Name = "📺 titan tivi man | SAFE",
-    LoadingTitle = "Forsaken",
-    LoadingSubtitle = "Sigma Safe Template",
-    ConfigurationSaving = {Enabled = false}
+    Name = "Titan Tivi Man",
+    LoadingTitle = "Titan Tivi Man",
+    LoadingSubtitle = "by kencute24",
+    ConfigurationSaving = { Enabled = false }
 })
 
---==================================================================================================
--- TABS (10)
---==================================================================================================
-local TMain   = Window:CreateTab("🏠 Main", 4483362458)
-local TMove   = Window:CreateTab("🚶 Movement", 4483362458)
-local TCam    = Window:CreateTab("🎥 Camera", 4483362458)
-local TESP    = Window:CreateTab("👁 ESP (Visual)", 4483362458)
-local TVisual = Window:CreateTab("🌈 Visual", 4483362458)
-local TUI     = Window:CreateTab("🧩 UI", 4483362458)
-local TBind   = Window:CreateTab("⌨ Keybind", 4483362458)
-local TStat   = Window:CreateTab("📊 Stats", 4483362458)
-local TMisc   = Window:CreateTab("⚙ Misc", 4483362458)
-local TAbout  = Window:CreateTab("ℹ About", 4483362458)
-
---==================================================================================================
--- STATE (SAFE DEFAULTS)
---==================================================================================================
 local STATE = {
-    -- Movement (safe caps)
-    SpeedEnabled = false,
-    WalkSpeed = 18,        -- cap thấp
-    JumpEnabled = false,
-    JumpPower = 50,        -- cap thấp
-
-    -- Camera
-    FOVEnabled = false,
-    FOV = 70,
-
-    -- Visual
-    Fullbright = false,
-    Ambient = Color3.fromRGB(200,200,200),
-
-    -- ESP (visual-only outline, toggle)
-    ESPEnabled = false,
-
-    -- UI
-    CompactUI = false,
+    ESP = true,
+    Speed = false,
+    Jump = false,
+    AutoEvade = true
 }
 
--- UTILS
-local function Char() return LocalPlayer.Character end
-local function Hum(m) return m and m:FindFirstChildOfClass("Humanoid") end
+--==================================================================================================
+-- TAB 1 : ESP
+--==================================================================================================
+local T1 = Window:CreateTab("ESP", 4483362458)
+
+T1:CreateButton({ Name = "ESP ON", Callback = function() STATE.ESP = true end })
+T1:CreateButton({ Name = "ESP OFF", Callback = function() STATE.ESP = false end })
+T1:CreateButton({ Name = "REFRESH ESP", Callback = function() end })
 
 --==================================================================================================
--- MAIN (INFO)
+-- TAB 2 : SPEED
 --==================================================================================================
-TMain:CreateParagraph({
-    Title = "SAFE MODE",
-    Content = "Template an toàn • Không fly • Không teleport • Không auto-kill\n" ..
-              "Chỉ tiện ích client nhẹ + UI.\n" ..
-              "Khuyến nghị giữ trong ngưỡng thấp."
-})
+local T2 = Window:CreateTab("Speed", 4483362458)
 
---==================================================================================================
--- MOVEMENT (SAFE)
---==================================================================================================
-TMove:CreateToggle({
-    Name = "Enable Speed (Safe)",
-    CurrentValue = STATE.SpeedEnabled,
-    Callback = function(v) STATE.SpeedEnabled = v end
-})
-
-TMove:CreateSlider({
-    Name = "WalkSpeed (16–20)",
-    Range = {16,20},
-    Increment = 1,
-    CurrentValue = STATE.WalkSpeed,
-    Callback = function(v) STATE.WalkSpeed = v end
-})
-
-TMove:CreateToggle({
-    Name = "Enable Jump (Safe)",
-    CurrentValue = STATE.JumpEnabled,
-    Callback = function(v) STATE.JumpEnabled = v end
-})
-
-TMove:CreateSlider({
-    Name = "JumpPower (45–55)",
-    Range = {45,55},
-    Increment = 1,
-    CurrentValue = STATE.JumpPower,
-    Callback = function(v) STATE.JumpPower = v end
-})
-
-RunService.Heartbeat:Connect(function()
-    local h = Hum(Char())
-    if not h then return end
-    if STATE.SpeedEnabled then h.WalkSpeed = STATE.WalkSpeed end
-    if STATE.JumpEnabled then h.JumpPower = STATE.JumpPower end
-end)
-
---==================================================================================================
--- CAMERA (SAFE)
---==================================================================================================
-TCam:CreateToggle({
-    Name = "Custom FOV",
-    CurrentValue = STATE.FOVEnabled,
-    Callback = function(v) STATE.FOVEnabled = v end
-})
-
-TCam:CreateSlider({
-    Name = "FOV (60–80)",
-    Range = {60,80},
-    Increment = 1,
-    CurrentValue = STATE.FOV,
-    Callback = function(v) STATE.FOV = v end
-})
-
-RunService.RenderStepped:Connect(function()
-    if STATE.FOVEnabled then
-        workspace.CurrentCamera.FieldOfView = STATE.FOV
-    end
-end)
-
---==================================================================================================
--- VISUAL (SAFE)
---==================================================================================================
-TVisual:CreateToggle({
-    Name = "Fullbright (Client)",
-    CurrentValue = STATE.Fullbright,
-    Callback = function(v)
-        STATE.Fullbright = v
-        if v then
-            Lighting.Brightness = 2
-            Lighting.ClockTime = 14
-            Lighting.FogEnd = 100000
-        end
+T2:CreateButton({
+    Name = "Speed ON",
+    Callback = function()
+        STATE.Speed = true
+        LocalPlayer.Character.Humanoid.WalkSpeed = 22
     end
 })
 
-TVisual:CreateColorPicker({
-    Name = "Ambient Color",
-    Color = STATE.Ambient,
-    Callback = function(c)
-        STATE.Ambient = c
-        Lighting.Ambient = c
+T2:CreateButton({
+    Name = "Speed OFF",
+    Callback = function()
+        STATE.Speed = false
+        LocalPlayer.Character.Humanoid.WalkSpeed = 16
     end
 })
 
 --==================================================================================================
--- ESP (VISUAL-ONLY, SAFE)
+-- TAB 3 : JUMP
 --==================================================================================================
-local function AddOutline(model)
-    if model:FindFirstChild("SAFE_OUTLINE") then return end
-    local h = Instance.new("Highlight")
-    h.Name = "SAFE_OUTLINE"
-    h.FillTransparency = 1
-    h.OutlineTransparency = 0
-    h.OutlineColor = Color3.fromRGB(255, 100, 200)
-    h.Parent = model
+local T3 = Window:CreateTab("Jump", 4483362458)
+
+T3:CreateButton({
+    Name = "Jump ON",
+    Callback = function()
+        STATE.Jump = true
+        LocalPlayer.Character.Humanoid.JumpPower = 70
+    end
+})
+
+T3:CreateButton({
+    Name = "Jump OFF",
+    Callback = function()
+        STATE.Jump = false
+        LocalPlayer.Character.Humanoid.JumpPower = 50
+    end
+})
+
+--==================================================================================================
+-- TAB 4 : EVADE
+--==================================================================================================
+local T4 = Window:CreateTab("Evade", 4483362458)
+
+T4:CreateButton({ Name = "Auto Evade ON", Callback = function() STATE.AutoEvade = true end })
+T4:CreateButton({ Name = "Auto Evade OFF", Callback = function() STATE.AutoEvade = false end })
+
+--==================================================================================================
+-- TAB 5 → 9 : EXTRA BUTTON ONLY
+--==================================================================================================
+for i = 5,9 do
+    local T = Window:CreateTab("Extra "..i, 4483362458)
+    T:CreateButton({ Name = "Button A", Callback = function() end })
+    T:CreateButton({ Name = "Button B", Callback = function() end })
+    T:CreateButton({ Name = "Button C", Callback = function() end })
+end
+
+--==================================================================================================
+-- TAB 10 : ABOUT (CHỈ TAB NÀY CÓ TEXT)
+--==================================================================================================
+local T10 = Window:CreateTab("About", 4483362458)
+
+T10:CreateParagraph({
+    Title = "Titan Tivi Man",
+    Content =
+        "Script by kencute24\n\n" ..
+        "ESP:\n" ..
+        "Green = Player\n" ..
+        "Red = Killer\n\n" ..
+        "Client Only\n" ..
+        "No Fly - No Teleport\n\n" ..
+        "TikTok:\n" ..
+        "titan tivi man: thin.p.bin38\n" ..
+        "kencute24"
+})
+
+--==================================================================================================
+-- ESP CORE (NAME + ROLE)
+--==================================================================================================
+local function IsKiller(model)
+    if not model or not model:IsA("Model") then return false end
+    if model:GetAttribute("Killer") == true then return true end
+    if model:GetAttribute("Enemy") == true then return true end
+    if model:GetAttribute("Nextbot") == true then return true end
+    if model:FindFirstChildWhichIsA("Tool") then return true end
+    if not Players:GetPlayerFromCharacter(model) then return true end
+    return false
 end
 
 RunService.RenderStepped:Connect(function()
-    if not STATE.ESPEnabled then return end
-    for _,p in pairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and p.Character then
-            AddOutline(p.Character)
+    if not STATE.ESP then return end
+
+    for _,char in pairs(workspace:GetChildren()) do
+        if char:IsA("Model") and char:FindFirstChild("HumanoidRootPart") then
+            local hrp = char.HumanoidRootPart
+
+            local gui = hrp:FindFirstChild("ESP_NAME")
+            if not gui then
+                gui = Instance.new("BillboardGui", hrp)
+                gui.Name = "ESP_NAME"
+                gui.Size = UDim2.new(0,250,0,30)
+                gui.StudsOffset = Vector3.new(0,3,0)
+                gui.AlwaysOnTop = true
+
+                local txt = Instance.new("TextLabel", gui)
+                txt.Name = "Text"
+                txt.Size = UDim2.new(1,0,1,0)
+                txt.BackgroundTransparency = 1
+                txt.TextScaled = true
+                txt.Font = Enum.Font.SourceSansBold
+            end
+
+            local hl = char:FindFirstChild("ESP_HL")
+            if not hl then
+                hl = Instance.new("Highlight", char)
+                hl.Name = "ESP_HL"
+                hl.FillTransparency = 1
+            end
+
+            local txt = gui.Text
+            if IsKiller(char) then
+                txt.Text = char.Name.." (Killer)"
+                txt.TextColor3 = Color3.fromRGB(255,0,0)
+                hl.OutlineColor = Color3.fromRGB(255,0,0)
+            else
+                txt.Text = char.Name.." (Player)"
+                txt.TextColor3 = Color3.fromRGB(0,255,0)
+                hl.OutlineColor = Color3.fromRGB(0,255,0)
+            end
         end
     end
 end)
-
-TESP:CreateToggle({
-    Name = "Player Outline (Visual)",
-    CurrentValue = STATE.ESPEnabled,
-    Callback = function(v) STATE.ESPEnabled = v end
-})
-
---==================================================================================================
--- UI / BINDS / STATS / MISC (SAFE PLACEHOLDERS)
---==================================================================================================
-TUI:CreateToggle({
-    Name = "Compact UI",
-    CurrentValue = STATE.CompactUI,
-    Callback = function(v) STATE.CompactUI = v end
-})
-
-TBind:CreateKeybind({
-    Name = "Toggle UI",
-    CurrentKeybind = "RightShift",
-    HoldToInteract = false,
-    Callback = function()
-        Rayfield:Toggle()
-    end
-})
-
-TStat:CreateParagraph({
-    Title = "Session",
-    Content = "Ping/Client FPS có thể thêm ở đây (safe, read-only)."
-})
-
-TMisc:CreateParagraph({
-    Title = "Notes",
-    Content = "Template an toàn — chỉ client visuals & limits."
-})
-
---==================================================================================================
--- ABOUT + TIKTOK
---==================================================================================================
-local TIKTOK_TITAN = "https://www.tiktok.com/@thin.p.bin38"
-local TIKTOK_KEN  = "https://www.tiktok.com/@kencute24"
-
-TAbout:CreateParagraph({
-    Title = "📺 titan tivi man",
-    Content = "Script by kencute24\nSAFE TEMPLATE\n10 Tabs\nNo Fly • No Teleport"
-})
-
-TAbout:CreateButton({
-    Name = "📱 TikTok titan tivi man",
-    Callback = function()
-        if setclipboard then setclipboard(TIKTOK_TITAN) end
-        Rayfield:Notify({Title="TikTok",Content="Đã copy link titan tivi man",Duration=3})
-    end
-})
-
-TAbout:CreateButton({
-    Name = "📱 TikTok kencute24",
-    Callback = function()
-        if setclipboard then setclipboard(TIKTOK_KEN) end
-        Rayfield:Notify({Title="TikTok",Content="Đã copy link kencute24",Duration=3})
-    end
-})
