@@ -1,254 +1,243 @@
 --==================================================================================================
--- 📺 TITAN TIVI MAN HUB | FORSAKEN
--- INSANE MODE (NO FLY)
--- SPEED + JUMP NO BAND
+-- TITAN TIVI MAN | SIGMA SAFE TEMPLATE
 -- Script by kencute24
--- TikTok: @kencute24
+-- SAFE MODE • NO FLY • NO TELEPORT • NO AUTO-KILL
 --==================================================================================================
 
---// SERVICES
+-- SERVICES
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
+local UserInputService = game:GetService("UserInputService")
+local Lighting = game:GetService("Lighting")
+local LocalPlayer = Players.LocalPlayer
 
-local LP = Players.LocalPlayer
-
---// RAYFIELD
+-- RAYFIELD
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 local Window = Rayfield:CreateWindow({
-    Name = "📺 titan tivi man | INSANE",
-    LoadingTitle = "titan tivi man",
-    LoadingSubtitle = "Script by kencute24",
-    ConfigurationSaving = {
-        Enabled = true,
-        FolderName = "TitanTiviMan",
-        FileName = "Forsaken_INSANE_NOFLY"
-    }
+    Name = "📺 titan tivi man | SAFE",
+    LoadingTitle = "Forsaken",
+    LoadingSubtitle = "Sigma Safe Template",
+    ConfigurationSaving = {Enabled = false}
 })
 
---// STATE
+--==================================================================================================
+-- TABS (10)
+--==================================================================================================
+local TMain   = Window:CreateTab("🏠 Main", 4483362458)
+local TMove   = Window:CreateTab("🚶 Movement", 4483362458)
+local TCam    = Window:CreateTab("🎥 Camera", 4483362458)
+local TESP    = Window:CreateTab("👁 ESP (Visual)", 4483362458)
+local TVisual = Window:CreateTab("🌈 Visual", 4483362458)
+local TUI     = Window:CreateTab("🧩 UI", 4483362458)
+local TBind   = Window:CreateTab("⌨ Keybind", 4483362458)
+local TStat   = Window:CreateTab("📊 Stats", 4483362458)
+local TMisc   = Window:CreateTab("⚙ Misc", 4483362458)
+local TAbout  = Window:CreateTab("ℹ About", 4483362458)
+
+--==================================================================================================
+-- STATE (SAFE DEFAULTS)
+--==================================================================================================
 local STATE = {
-    Speed=false, WalkSpeed=26,
-    Jump=false, JumpPower=65,
-    Noclip=false,
-    Invisible=false,
-    ESP=false,
-    AutoKill=false,
-    TimeStop=false,
-    Orbit=false, OrbitSpeed=8, OrbitRadius=8,
-    TeleportSpam=false
+    -- Movement (safe caps)
+    SpeedEnabled = false,
+    WalkSpeed = 18,        -- cap thấp
+    JumpEnabled = false,
+    JumpPower = 50,        -- cap thấp
+
+    -- Camera
+    FOVEnabled = false,
+    FOV = 70,
+
+    -- Visual
+    Fullbright = false,
+    Ambient = Color3.fromRGB(200,200,200),
+
+    -- ESP (visual-only outline, toggle)
+    ESPEnabled = false,
+
+    -- UI
+    CompactUI = false,
 }
 
---// UTILS
-local function Char()
-    return LP.Character or LP.CharacterAdded:Wait()
-end
-local function HRP(m)
-    return m and m:FindFirstChild("HumanoidRootPart")
-end
-local function Hum(m)
-    return m and m:FindFirstChildOfClass("Humanoid")
-end
-
---// TABS
-local TMain = Window:CreateTab("⚙ MAIN",4483362458)
-local TMove = Window:CreateTab("🚀 MOVE",4483362458)
-local TVis  = Window:CreateTab("👁 VISUAL",4483362458)
-local TKill = Window:CreateTab("💀 KILL",4483362458)
-local TAbt  = Window:CreateTab("📜 ABOUT",4483362458)
+-- UTILS
+local function Char() return LocalPlayer.Character end
+local function Hum(m) return m and m:FindFirstChildOfClass("Humanoid") end
 
 --==================================================================================================
--- INVISIBLE
+-- MAIN (INFO)
 --==================================================================================================
-local function SetInvisible(v)
-    for _,d in pairs(Char():GetDescendants()) do
-        if d:IsA("BasePart") then
-            d.LocalTransparencyModifier = v and 1 or 0
-            d.CastShadow = not v
-        elseif d:IsA("Decal") then
-            d.Transparency = v and 1 or 0
-        end
-    end
-end
-TVis:CreateToggle({
-    Name="Invisible",
-    CurrentValue=false,
-    Callback=function(v) STATE.Invisible=v; SetInvisible(v) end
+TMain:CreateParagraph({
+    Title = "SAFE MODE",
+    Content = "Template an toàn • Không fly • Không teleport • Không auto-kill\n" ..
+              "Chỉ tiện ích client nhẹ + UI.\n" ..
+              "Khuyến nghị giữ trong ngưỡng thấp."
 })
 
 --==================================================================================================
--- SPEED + JUMP (NO BAND)
+-- MOVEMENT (SAFE)
 --==================================================================================================
-local SAFE = { WS_MIN=16, WS_MAX=40, JP_MIN=50, JP_MAX=90 }
+TMove:CreateToggle({
+    Name = "Enable Speed (Safe)",
+    CurrentValue = STATE.SpeedEnabled,
+    Callback = function(v) STATE.SpeedEnabled = v end
+})
 
-RunService.RenderStepped:Connect(function()
+TMove:CreateSlider({
+    Name = "WalkSpeed (16–20)",
+    Range = {16,20},
+    Increment = 1,
+    CurrentValue = STATE.WalkSpeed,
+    Callback = function(v) STATE.WalkSpeed = v end
+})
+
+TMove:CreateToggle({
+    Name = "Enable Jump (Safe)",
+    CurrentValue = STATE.JumpEnabled,
+    Callback = function(v) STATE.JumpEnabled = v end
+})
+
+TMove:CreateSlider({
+    Name = "JumpPower (45–55)",
+    Range = {45,55},
+    Increment = 1,
+    CurrentValue = STATE.JumpPower,
+    Callback = function(v) STATE.JumpPower = v end
+})
+
+RunService.Heartbeat:Connect(function()
     local h = Hum(Char())
     if not h then return end
-
-    if STATE.Speed then
-        local ws = math.clamp(STATE.WalkSpeed, SAFE.WS_MIN, SAFE.WS_MAX)
-        if h.WalkSpeed ~= ws then h.WalkSpeed = ws end
-    end
-    if STATE.Jump then
-        local jp = math.clamp(STATE.JumpPower, SAFE.JP_MIN, SAFE.JP_MAX)
-        if h.JumpPower ~= jp then h.JumpPower = jp end
-    end
+    if STATE.SpeedEnabled then h.WalkSpeed = STATE.WalkSpeed end
+    if STATE.JumpEnabled then h.JumpPower = STATE.JumpPower end
 end)
 
-TMove:CreateToggle({Name="Speed (No Band)",CurrentValue=false,Callback=function(v) STATE.Speed=v end})
-TMove:CreateSlider({Name="WalkSpeed",Range={16,40},Increment=1,CurrentValue=STATE.WalkSpeed,Callback=function(v) STATE.WalkSpeed=v end})
-TMove:CreateToggle({Name="Jump (No Band)",CurrentValue=false,Callback=function(v) STATE.Jump=v end})
-TMove:CreateSlider({Name="JumpPower",Range={50,90},Increment=1,CurrentValue=STATE.JumpPower,Callback=function(v) STATE.JumpPower=v end})
+--==================================================================================================
+-- CAMERA (SAFE)
+--==================================================================================================
+TCam:CreateToggle({
+    Name = "Custom FOV",
+    CurrentValue = STATE.FOVEnabled,
+    Callback = function(v) STATE.FOVEnabled = v end
+})
 
---==================================================================================================
--- NOCLIP
---==================================================================================================
-RunService.Stepped:Connect(function()
-    if STATE.Noclip then
-        for _,p in pairs(Char():GetDescendants()) do
-            if p:IsA("BasePart") then p.CanCollide=false end
-        end
-    end
-end)
-TMove:CreateToggle({Name="Noclip",CurrentValue=false,Callback=function(v) STATE.Noclip=v end})
+TCam:CreateSlider({
+    Name = "FOV (60–80)",
+    Range = {60,80},
+    Increment = 1,
+    CurrentValue = STATE.FOV,
+    Callback = function(v) STATE.FOV = v end
+})
 
---==================================================================================================
--- ESP (NAME + BOX)
---==================================================================================================
-local function NameESP(head,name)
-    if head:FindFirstChild("TTM_ESP") then return end
-    local g=Instance.new("BillboardGui",head)
-    g.Name="TTM_ESP"; g.Size=UDim2.new(0,200,0,40); g.AlwaysOnTop=true
-    local t=Instance.new("TextLabel",g)
-    t.Size=UDim2.new(1,0,1,0); t.BackgroundTransparency=1
-    t.TextScaled=true; t.TextColor3=Color3.fromRGB(0,255,255); t.Text=name
-end
-local function BoxESP(m)
-    if m:FindFirstChild("TTM_BOX") then return end
-    local b=Instance.new("SelectionBox",m)
-    b.Name="TTM_BOX"; b.LineThickness=.05; b.Color3=Color3.fromRGB(255,0,255); b.Adornee=m
-end
 RunService.RenderStepped:Connect(function()
-    if STATE.ESP then
-        for _,p in pairs(Players:GetPlayers()) do
-            if p~=LP and p.Character and p.Character:FindFirstChild("Head") then
-                NameESP(p.Character.Head,p.Name)
-                BoxESP(p.Character)
-            end
-        end
+    if STATE.FOVEnabled then
+        workspace.CurrentCamera.FieldOfView = STATE.FOV
     end
 end)
-TVis:CreateToggle({Name="ESP Player + Box",CurrentValue=false,Callback=function(v) STATE.ESP=v end})
 
 --==================================================================================================
--- AUTO KILL (FORCE)
+-- VISUAL (SAFE)
 --==================================================================================================
-RunService.Heartbeat:Connect(function()
-    if STATE.AutoKill then
-        local me=HRP(Char()); if not me then return end
-        for _,m in pairs(Workspace:GetChildren()) do
-            local h=HRP(m)
-            if h and m~=Char() then
-                if (h.Position-me.Position).Magnitude < 20 then
-                    h.Velocity=(h.Position-me.Position).Unit*220
-                end
-            end
-        end
-    end
-end)
-TKill:CreateToggle({Name="Auto Kill (Force)",CurrentValue=false,Callback=function(v) STATE.AutoKill=v end})
-
---==================================================================================================
--- FAKE TIME STOP (VISUAL)
---==================================================================================================
-RunService.RenderStepped:Connect(function()
-    if STATE.TimeStop then
-        for _,m in pairs(Workspace:GetChildren()) do
-            local h=HRP(m); if h and m~=Char() then h.Anchored=true end
-        end
-    end
-end)
-TMain:CreateToggle({
-    Name="Fake Time Stop",
-    CurrentValue=false,
-    Callback=function(v)
-        STATE.TimeStop=v
-        if not v then
-            for _,m in pairs(Workspace:GetChildren()) do
-                local h=HRP(m); if h then h.Anchored=false end
-            end
+TVisual:CreateToggle({
+    Name = "Fullbright (Client)",
+    CurrentValue = STATE.Fullbright,
+    Callback = function(v)
+        STATE.Fullbright = v
+        if v then
+            Lighting.Brightness = 2
+            Lighting.ClockTime = 14
+            Lighting.FogEnd = 100000
         end
     end
 })
 
---==================================================================================================
--- ORBIT
---==================================================================================================
-RunService.Heartbeat:Connect(function()
-    if STATE.Orbit then
-        local me=HRP(Char()); if not me then return end
-        for _,p in pairs(Players:GetPlayers()) do
-            if p~=LP and p.Character then
-                local t=HRP(p.Character); if t then
-                    local a=tick()*STATE.OrbitSpeed
-                    local off=Vector3.new(math.cos(a)*STATE.OrbitRadius,0,math.sin(a)*STATE.OrbitRadius)
-                    me.CFrame=CFrame.new(t.Position+off,t.Position)
-                end
-            end
-        end
+TVisual:CreateColorPicker({
+    Name = "Ambient Color",
+    Color = STATE.Ambient,
+    Callback = function(c)
+        STATE.Ambient = c
+        Lighting.Ambient = c
     end
-end)
-TMove:CreateToggle({Name="Orbit Player",CurrentValue=false,Callback=function(v) STATE.Orbit=v end})
-TMove:CreateSlider({Name="Orbit Speed",Range={1,20},Increment=1,CurrentValue=STATE.OrbitSpeed,Callback=function(v) STATE.OrbitSpeed=v end})
+})
 
 --==================================================================================================
--- TELEPORT SPAM
+-- ESP (VISUAL-ONLY, SAFE)
 --==================================================================================================
-RunService.Heartbeat:Connect(function()
-    if STATE.TeleportSpam then
-        local h=HRP(Char())
-        if h then
-            h.CFrame=h.CFrame*CFrame.new(math.random(-10,10),math.random(-2,2),math.random(-10,10))
+local function AddOutline(model)
+    if model:FindFirstChild("SAFE_OUTLINE") then return end
+    local h = Instance.new("Highlight")
+    h.Name = "SAFE_OUTLINE"
+    h.FillTransparency = 1
+    h.OutlineTransparency = 0
+    h.OutlineColor = Color3.fromRGB(255, 100, 200)
+    h.Parent = model
+end
+
+RunService.RenderStepped:Connect(function()
+    if not STATE.ESPEnabled then return end
+    for _,p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character then
+            AddOutline(p.Character)
         end
     end
 end)
-TMove:CreateToggle({Name="Teleport Spam",CurrentValue=false,Callback=function(v) STATE.TeleportSpam=v end})
+
+TESP:CreateToggle({
+    Name = "Player Outline (Visual)",
+    CurrentValue = STATE.ESPEnabled,
+    Callback = function(v) STATE.ESPEnabled = v end
+})
+
+--==================================================================================================
+-- UI / BINDS / STATS / MISC (SAFE PLACEHOLDERS)
+--==================================================================================================
+TUI:CreateToggle({
+    Name = "Compact UI",
+    CurrentValue = STATE.CompactUI,
+    Callback = function(v) STATE.CompactUI = v end
+})
+
+TBind:CreateKeybind({
+    Name = "Toggle UI",
+    CurrentKeybind = "RightShift",
+    HoldToInteract = false,
+    Callback = function()
+        Rayfield:Toggle()
+    end
+})
+
+TStat:CreateParagraph({
+    Title = "Session",
+    Content = "Ping/Client FPS có thể thêm ở đây (safe, read-only)."
+})
+
+TMisc:CreateParagraph({
+    Title = "Notes",
+    Content = "Template an toàn — chỉ client visuals & limits."
+})
 
 --==================================================================================================
 -- ABOUT + TIKTOK
 --==================================================================================================
-local TIKTOK_LINK = "https://www.tiktok.com/@kencute24"
+local TIKTOK_TITAN = "https://www.tiktok.com/@thin.p.bin38"
+local TIKTOK_KEN  = "https://www.tiktok.com/@kencute24"
 
-TAbt:CreateParagraph({
-    Title="📺 TITAN TIVI MAN",
-    Content=
-        "Script by kencute24\n\n"..
-        "TikTok me:\n@kencute24\n\n"..
-        "INSANE MODE • NO FLY\n"..
-        "Speed + Jump No Band\n"..
-        "ESP • Invisible • AutoKill • Orbit • TimeStop"
+TAbout:CreateParagraph({
+    Title = "📺 titan tivi man",
+    Content = "Script by kencute24\nSAFE TEMPLATE\n10 Tabs\nNo Fly • No Teleport"
 })
 
-TAbt:CreateButton({
-    Name="📱 TikTok: kencute24",
-    Callback=function()
-        if setclipboard then
-            setclipboard(TIKTOK_LINK)
-            Rayfield:Notify({
-                Title="TikTok kencute24",
-                Content="Đã copy link TikTok 📋",
-                Duration=3
-            })
-        else
-            Rayfield:Notify({
-                Title="TikTok kencute24",
-                Content=TIKTOK_LINK,
-                Duration=5
-            })
-        end
+TAbout:CreateButton({
+    Name = "📱 TikTok titan tivi man",
+    Callback = function()
+        if setclipboard then setclipboard(TIKTOK_TITAN) end
+        Rayfield:Notify({Title="TikTok",Content="Đã copy link titan tivi man",Duration=3})
     end
 })
 
---==================================================================================================
--- END
---==================================================================================================
+TAbout:CreateButton({
+    Name = "📱 TikTok kencute24",
+    Callback = function()
+        if setclipboard then setclipboard(TIKTOK_KEN) end
+        Rayfield:Notify({Title="TikTok",Content="Đã copy link kencute24",Duration=3})
+    end
+})
