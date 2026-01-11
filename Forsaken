@@ -1,7 +1,9 @@
 --==================================================================================================
 -- 📺 TITAN TIVI MAN HUB | FORSAKEN
--- INSANE + MAX MODE
--- by kencute24
+-- INSANE MODE (NO FLY)
+-- SPEED + JUMP NO BAND
+-- Script by kencute24
+-- TikTok: @kencute24
 --==================================================================================================
 
 --// SERVICES
@@ -10,29 +12,43 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 local LP = Players.LocalPlayer
-local Cam = Workspace.CurrentCamera
 
 --// RAYFIELD
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 local Window = Rayfield:CreateWindow({
     Name = "📺 titan tivi man | INSANE",
     LoadingTitle = "titan tivi man",
-    LoadingSubtitle = "by kencute24",
-    ConfigurationSaving = {Enabled=true, FolderName="TitanTiviMan", FileName="Forsaken_INSANE"}
+    LoadingSubtitle = "Script by kencute24",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "TitanTiviMan",
+        FileName = "Forsaken_INSANE_NOFLY"
+    }
 })
 
 --// STATE
 local STATE = {
-    Fly=false, FlySpeed=90, Noclip=false,
-    Invisible=false, ESP=false,
-    AutoKill=false, TimeStop=false,
+    Speed=false, WalkSpeed=26,
+    Jump=false, JumpPower=65,
+    Noclip=false,
+    Invisible=false,
+    ESP=false,
+    AutoKill=false,
+    TimeStop=false,
     Orbit=false, OrbitSpeed=8, OrbitRadius=8,
     TeleportSpam=false
 }
 
 --// UTILS
-local function Char() return LP.Character or LP.CharacterAdded:Wait() end
-local function HRP(m) return m and m:FindFirstChild("HumanoidRootPart") end
+local function Char()
+    return LP.Character or LP.CharacterAdded:Wait()
+end
+local function HRP(m)
+    return m and m:FindFirstChild("HumanoidRootPart")
+end
+local function Hum(m)
+    return m and m:FindFirstChildOfClass("Humanoid")
+end
 
 --// TABS
 local TMain = Window:CreateTab("⚙ MAIN",4483362458)
@@ -54,26 +70,35 @@ local function SetInvisible(v)
         end
     end
 end
-TVis:CreateToggle({Name="Invisible",CurrentValue=false,Callback=function(v) STATE.Invisible=v; SetInvisible(v) end})
+TVis:CreateToggle({
+    Name="Invisible",
+    CurrentValue=false,
+    Callback=function(v) STATE.Invisible=v; SetInvisible(v) end
+})
 
 --==================================================================================================
--- FLY (NO KEYBOARD)
+-- SPEED + JUMP (NO BAND)
 --==================================================================================================
-local BV,BG
-local function FlyOn()
-    local h=HRP(Char()); if not h then return end
-    BV=Instance.new("BodyVelocity",h); BV.MaxForce=Vector3.new(9e9,9e9,9e9)
-    BG=Instance.new("BodyGyro",h); BG.MaxTorque=Vector3.new(9e9,9e9,9e9)
-end
-local function FlyOff() if BV then BV:Destroy() BV=nil end if BG then BG:Destroy() BG=nil end end
+local SAFE = { WS_MIN=16, WS_MAX=40, JP_MIN=50, JP_MAX=90 }
+
 RunService.RenderStepped:Connect(function()
-    if STATE.Fly and BV and BG then
-        BV.Velocity = Cam.CFrame.LookVector * STATE.FlySpeed
-        BG.CFrame = Cam.CFrame
+    local h = Hum(Char())
+    if not h then return end
+
+    if STATE.Speed then
+        local ws = math.clamp(STATE.WalkSpeed, SAFE.WS_MIN, SAFE.WS_MAX)
+        if h.WalkSpeed ~= ws then h.WalkSpeed = ws end
+    end
+    if STATE.Jump then
+        local jp = math.clamp(STATE.JumpPower, SAFE.JP_MIN, SAFE.JP_MAX)
+        if h.JumpPower ~= jp then h.JumpPower = jp end
     end
 end)
-TMove:CreateToggle({Name="Fly (No Keyboard)",CurrentValue=false,Callback=function(v) STATE.Fly=v; if v then FlyOn() else FlyOff() end end})
-TMove:CreateSlider({Name="Fly Speed",Range={20,300},Increment=5,CurrentValue=STATE.FlySpeed,Callback=function(v) STATE.FlySpeed=v end})
+
+TMove:CreateToggle({Name="Speed (No Band)",CurrentValue=false,Callback=function(v) STATE.Speed=v end})
+TMove:CreateSlider({Name="WalkSpeed",Range={16,40},Increment=1,CurrentValue=STATE.WalkSpeed,Callback=function(v) STATE.WalkSpeed=v end})
+TMove:CreateToggle({Name="Jump (No Band)",CurrentValue=false,Callback=function(v) STATE.Jump=v end})
+TMove:CreateSlider({Name="JumpPower",Range={50,90},Increment=1,CurrentValue=STATE.JumpPower,Callback=function(v) STATE.JumpPower=v end})
 
 --==================================================================================================
 -- NOCLIP
@@ -92,19 +117,23 @@ TMove:CreateToggle({Name="Noclip",CurrentValue=false,Callback=function(v) STATE.
 --==================================================================================================
 local function NameESP(head,name)
     if head:FindFirstChild("TTM_ESP") then return end
-    local g=Instance.new("BillboardGui",head); g.Name="TTM_ESP"; g.Size=UDim2.new(0,200,0,40); g.AlwaysOnTop=true
-    local t=Instance.new("TextLabel",g); t.Size=UDim2.new(1,0,1,0); t.BackgroundTransparency=1
+    local g=Instance.new("BillboardGui",head)
+    g.Name="TTM_ESP"; g.Size=UDim2.new(0,200,0,40); g.AlwaysOnTop=true
+    local t=Instance.new("TextLabel",g)
+    t.Size=UDim2.new(1,0,1,0); t.BackgroundTransparency=1
     t.TextScaled=true; t.TextColor3=Color3.fromRGB(0,255,255); t.Text=name
 end
 local function BoxESP(m)
     if m:FindFirstChild("TTM_BOX") then return end
-    local b=Instance.new("SelectionBox",m); b.Name="TTM_BOX"; b.LineThickness=.05; b.Color3=Color3.fromRGB(255,0,255); b.Adornee=m
+    local b=Instance.new("SelectionBox",m)
+    b.Name="TTM_BOX"; b.LineThickness=.05; b.Color3=Color3.fromRGB(255,0,255); b.Adornee=m
 end
 RunService.RenderStepped:Connect(function()
     if STATE.ESP then
         for _,p in pairs(Players:GetPlayers()) do
             if p~=LP and p.Character and p.Character:FindFirstChild("Head") then
-                NameESP(p.Character.Head,p.Name); BoxESP(p.Character)
+                NameESP(p.Character.Head,p.Name)
+                BoxESP(p.Character)
             end
         end
     end
@@ -120,7 +149,7 @@ RunService.Heartbeat:Connect(function()
         for _,m in pairs(Workspace:GetChildren()) do
             local h=HRP(m)
             if h and m~=Char() then
-                if (h.Position-me.Position).Magnitude<20 then
+                if (h.Position-me.Position).Magnitude < 20 then
                     h.Velocity=(h.Position-me.Position).Unit*220
                 end
             end
@@ -139,13 +168,21 @@ RunService.RenderStepped:Connect(function()
         end
     end
 end)
-TMain:CreateToggle({Name="Fake Time Stop",CurrentValue=false,Callback=function(v)
-    STATE.TimeStop=v
-    if not v then for _,m in pairs(Workspace:GetChildren()) do local h=HRP(m); if h then h.Anchored=false end end end
-end})
+TMain:CreateToggle({
+    Name="Fake Time Stop",
+    CurrentValue=false,
+    Callback=function(v)
+        STATE.TimeStop=v
+        if not v then
+            for _,m in pairs(Workspace:GetChildren()) do
+                local h=HRP(m); if h then h.Anchored=false end
+            end
+        end
+    end
+})
 
 --==================================================================================================
--- ORBIT (ANIME)
+-- ORBIT
 --==================================================================================================
 RunService.Heartbeat:Connect(function()
     if STATE.Orbit then
@@ -169,7 +206,8 @@ TMove:CreateSlider({Name="Orbit Speed",Range={1,20},Increment=1,CurrentValue=STA
 --==================================================================================================
 RunService.Heartbeat:Connect(function()
     if STATE.TeleportSpam then
-        local h=HRP(Char()); if h then
+        local h=HRP(Char())
+        if h then
             h.CFrame=h.CFrame*CFrame.new(math.random(-10,10),math.random(-2,2),math.random(-10,10))
         end
     end
@@ -177,7 +215,40 @@ end)
 TMove:CreateToggle({Name="Teleport Spam",CurrentValue=false,Callback=function(v) STATE.TeleportSpam=v end})
 
 --==================================================================================================
--- ABOUT
+-- ABOUT + TIKTOK
 --==================================================================================================
-TAbt:CreateParagraph({Title="INSANE MODE",Content="Fly • Noclip • ESP • Invisible • AutoKill • TimeStop • Orbit • Teleport\nby kencute24"})
+local TIKTOK_LINK = "https://www.tiktok.com/@kencute24"
+
+TAbt:CreateParagraph({
+    Title="📺 TITAN TIVI MAN",
+    Content=
+        "Script by kencute24\n\n"..
+        "TikTok me:\n@kencute24\n\n"..
+        "INSANE MODE • NO FLY\n"..
+        "Speed + Jump No Band\n"..
+        "ESP • Invisible • AutoKill • Orbit • TimeStop"
+})
+
+TAbt:CreateButton({
+    Name="📱 TikTok: kencute24",
+    Callback=function()
+        if setclipboard then
+            setclipboard(TIKTOK_LINK)
+            Rayfield:Notify({
+                Title="TikTok kencute24",
+                Content="Đã copy link TikTok 📋",
+                Duration=3
+            })
+        else
+            Rayfield:Notify({
+                Title="TikTok kencute24",
+                Content=TIKTOK_LINK,
+                Duration=5
+            })
+        end
+    end
+})
+
+--==================================================================================================
+-- END
 --==================================================================================================
